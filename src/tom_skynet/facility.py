@@ -1,13 +1,14 @@
 import logging
 
-from aeonlib.skynet import STATES, ObservationProgress
+from aeonlib.exceptions import AuthenticationError, ServiceNetworkError
+from aeonlib.skynet import STATES, ObservationProgress, SkynetError
 from django.db.models import Q
 from tom_dataproducts.models import DataProduct
 from tom_observations.facility import BaseRoboticObservationFacility
 from tom_observations.models import ObservationRecord
 
 from .client import facility_for_observation
-from .credentials import FACILITY_NAME
+from .credentials import FACILITY_NAME, SkynetCredentialsError, web_root
 from .forms import SkynetImagingForm
 from .models import SkynetRecordState
 
@@ -71,7 +72,8 @@ class SkynetFacility(BaseRoboticObservationFacility):
         return [str(error) for error in form.non_field_errors()]
 
     def get_observation_url(self, observation_id):
-        raise NotImplementedError
+        # AEONlib's observation_url, which needs a token to build the facility
+        return f"{web_root().rstrip('/')}/observations/{observation_id}"
 
     def get_terminal_observing_states(self):
         return ["COMPLETED", "PARTIALLY_COMPLETED", "CANCELED", "WINDOW_EXPIRED"]
@@ -131,6 +133,22 @@ class SkynetFacility(BaseRoboticObservationFacility):
                 logger.warning("Skynet observation %s: %s", observation_id, exc)
                 failed_records.append((observation_id, str(exc)))
         return failed_records
+
+    def all_data_products(self, observation_record):
+        """The record page's products; only the saved ones when Skynet can't be read"""
+        try:
+            return super().all_data_products(observation_record)
+        except (
+            SkynetCredentialsError,
+            AuthenticationError,
+            ServiceNetworkError,
+            SkynetError,
+        ) as exc:
+            logger.warning(
+                "Skynet observation %s: %s", observation_record.observation_id, exc
+            )
+            saved = DataProduct.objects.filter(observation_record=observation_record)
+            return {"saved": list(saved), "unsaved": []}
 
     def data_products(self, observation_id, product_id=None):
         """The final science files, with presigned URLs; a re-processed frame is a new file"""

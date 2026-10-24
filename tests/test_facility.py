@@ -3,6 +3,7 @@ import json
 import pytest
 from django.core.management import call_command
 from django.urls import reverse
+from guardian.shortcuts import assign_perm
 from tom_dataproducts.models import DataProduct
 from tom_observations.models import ObservationRecord
 from tom_targets.models import Target
@@ -15,6 +16,7 @@ from .conftest import load
 pytestmark = pytest.mark.django_db
 
 PUBLISH = ("POST", "/v1/observation-specs:publish")
+PRESIGN = ("POST", "/v1/files/data/presign")
 
 
 @pytest.fixture
@@ -231,3 +233,90 @@ class TestStatus:
         assert facility.update_all_observation_statuses() == []
         assert facility.update_all_observation_statuses() == []
         assert len(skynet_api.requests) == 1
+
+
+class TestDataProducts:
+    def test_final_products_are_saved_while_polling(self, ada, target, skynet_api):
+        polled = record(ada, target)
+        skynet_api.progress["317"] = products()
+        SkynetFacility().update_observation_status("317")
+        (saved,) = DataProduct.objects.all()
+        file_id = load("progress_products.json")["products"][0]["fileId"]
+        assert saved.product_id == f"skynet:{file_id}"
+        assert saved.observation_record == polled
+        assert saved.target == target
+        assert saved.data.name.endswith("reduced-0001.fits")
+        assert skynet_api.downloads == [f"https://minio.invalid/{file_id}"]
+
+    def test_saved_products_are_not_fetched_again(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        facility = SkynetFacility()
+        facility.update_observation_status("317")
+        facility.update_observation_status("317")
+        assert len(skynet_api.sent(*PRESIGN)) == 1
+        assert len(skynet_api.downloads) == 1
+
+    def test_a_frame_still_processing_is_not_saved(self, ada, target, skynet_api):
+        record(ada, target)
+        raw = product("raw-file", isFinal=False, isReduced=False)
+        skynet_api.progress["317"] = products(products=[raw])
+        SkynetFacility().update_observation_status("317")
+        assert not DataProduct.objects.exists()
+        assert not skynet_api.sent(*PRESIGN)
+
+    def test_a_reprocessed_frame_is_a_second_product(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        facility = SkynetFacility()
+        facility.update_observation_status("317")
+        rerun = product("reprocessed-file", assetId=227, filename="reduced-0002.fits")
+        skynet_api.progress["317"] = products(products=[rerun])
+        facility.update_observation_status("317")
+        assert sorted(DataProduct.objects.values_list("product_id", flat=True)) == [
+            f"skynet:{load('progress_products.json')['products'][0]['fileId']}",
+            "skynet:reprocessed-file",
+        ]
+
+    def test_the_products_offered_by_id(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products(
+            products=[
+                product("a"),
+                product("b", takenAtStartUtc="2026-10-23T13:40:00Z"),
+            ]
+        )
+        offered = SkynetFacility().data_products("317")
+        assert [p["id"] for p in offered] == ["skynet:a", "skynet:b"]
+        assert offered[1]["created"].isoformat() == "2026-10-23T13:40:00+00:00"
+        assert offered[0]["url"] == "https://minio.invalid/a"
+        assert SkynetFacility().data_products("317", "skynet:b") == [offered[1]]
+
+    def test_the_record_page_lists_the_unsaved_products(
+        self, client, ada, target, skynet_api
+    ):
+        page = record(ada, target)
+        skynet_api.progress["317"] = products()
+        assign_perm("tom_targets.view_target", ada, target)
+        client.force_login(ada)
+        response = client.get(reverse("tom_observations:detail", args=[page.pk]))
+        assert response.status_code == 200
+        assert len(response.context["data_products"]["unsaved"]) == 1
+
+    def test_the_record_page_without_a_token(
+        self, client, target, skynet_api, django_user_model
+    ):
+        bob = django_user_model.objects.create_user(username="bob")
+        page = record(bob, target)
+        assign_perm("tom_targets.view_target", bob, target)
+        client.force_login(bob)
+        response = client.get(reverse("tom_observations:detail", args=[page.pk]))
+        assert response.status_code == 200
+        assert response.context["data_products"] == {"saved": [], "unsaved": []}
+
+
+def test_the_observation_link_needs_no_token(skynet_api):
+    assert (
+        SkynetFacility().get_observation_url("317")
+        == "http://web.test/observations/317"
+    )

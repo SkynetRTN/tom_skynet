@@ -15,6 +15,14 @@ def _facility_settings() -> dict:
     return getattr(django_settings, "FACILITIES", {}).get("SKYNET", {})
 
 
+def web_root() -> str:
+    """The Skynet website, from FACILITIES["SKYNET"]["web_root"] or AEONlib's default"""
+    return (
+        _facility_settings().get("web_root")
+        or Settings.model_fields["skynet_web_root"].default
+    )
+
+
 def settings_for_user(user) -> Settings:
     """
     Build AEONlib settings for a TOM user from their Skynet profile. A token in
@@ -29,11 +37,11 @@ def settings_for_user(user) -> Settings:
     if not token:
         name = user.get_username() if user is not None else "an anonymous user"
         raise SkynetCredentialsError(f"No Skynet API token for {name}")
-    defaults = Settings.model_fields
     return Settings(
         skynet_token=token,
-        skynet_api_root=facility.get("api_root") or defaults["skynet_api_root"].default,
-        skynet_web_root=facility.get("web_root") or defaults["skynet_web_root"].default,
+        skynet_api_root=facility.get("api_root")
+        or Settings.model_fields["skynet_api_root"].default,
+        skynet_web_root=web_root(),
     )
 
 
