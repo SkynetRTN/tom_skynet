@@ -27,3 +27,9 @@ def test_the_facility_can_be_instantiated():
     ]
     assert facility.get_failed_observing_states() == ["WINDOW_EXPIRED"]
     assert facility.get_observing_sites() == {}
+
+
+def test_aeonlib_brings_the_skynet_facility():
+    from aeonlib.skynet import SkynetFacility as AeonlibSkynetFacility
+
+    assert AeonlibSkynetFacility.__module__ == "aeonlib.skynet.facility"
