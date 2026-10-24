@@ -1,13 +1,19 @@
 from tom_observations.facility import BaseRoboticObservationFacility
 
+from .forms import SkynetImagingForm
+
 
 class SkynetFacility(BaseRoboticObservationFacility):
     """Skynet Robotic Telescope Network facility"""
 
     name = "Skynet"
 
+    def __init__(self):
+        super().__init__()
+        self.observation_forms = {"IMAGING": SkynetImagingForm}
+
     def get_form(self, observation_type):
-        raise NotImplementedError
+        return SkynetImagingForm
 
     def submit_observation(self, observation_payload):
         raise NotImplementedError

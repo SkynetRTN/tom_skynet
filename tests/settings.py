@@ -25,6 +25,9 @@ TEMPLATES = [
 ]
 SITE_ID = 1
 USE_TZ = True
+# Not UTC, on purpose: the form's times are UTC whatever the TOM's zone is.
+TIME_ZONE = "America/New_York"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 STATIC_URL = "/static/"
 TARGET_TYPE = "SIDEREAL"
 FACILITIES = {}

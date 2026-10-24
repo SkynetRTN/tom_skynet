@@ -1,0 +1,748 @@
+{
+  "entities": {
+    "133": {
+      "affiliation": null,
+      "age": null,
+      "birthdate": null,
+      "country": null,
+      "createdOn": "2026-10-21T18:42:52.463407Z",
+      "description": null,
+      "entityType": "user",
+      "facebookId": null,
+      "firstName": null,
+      "githubId": null,
+      "id": 133,
+      "language": null,
+      "lastName": null,
+      "linkedinId": null,
+      "location": null,
+      "name": "Ada Lovelace",
+      "orcidId": null,
+      "orcidVerifiedAt": null,
+      "profileImageId": null,
+      "slug": "ada",
+      "title": null,
+      "twitterId": null,
+      "uid": "3f30d2de-0574-45f7-a3fc-9bd7589138d6",
+      "username": "ada",
+      "websiteUrl": null
+    },
+    "134": {
+      "allowRequestToJoin": false,
+      "country": null,
+      "createdOn": "2026-10-21T18:42:52.463407Z",
+      "defaultRoleId": null,
+      "description": null,
+      "entityType": "organization",
+      "id": 134,
+      "isPublic": true,
+      "location": null,
+      "memberCount": 1,
+      "membersVisibleToMembers": true,
+      "name": "Transient team",
+      "observingPolicyIds": null,
+      "profileImageId": null,
+      "shortName": null,
+      "slug": "transient-team",
+      "uid": "ab9d37ca-18d0-447a-9e08-8019064d6545",
+      "websiteUrl": null
+    }
+  },
+  "filters": {
+    "B": {
+      "bandpassNm": 88.0,
+      "centralWavelengthNm": 440.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "B",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "I": {
+      "bandpassNm": 263.0,
+      "centralWavelengthNm": 865.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "I",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "OIII": {
+      "bandpassNm": 3.0,
+      "centralWavelengthNm": 500.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "OIII",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "R": {
+      "bandpassNm": 137.0,
+      "centralWavelengthNm": 645.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "R",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "SII": {
+      "bandpassNm": 3.0,
+      "centralWavelengthNm": 672.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "SII",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "U": {
+      "bandpassNm": 76.0,
+      "centralWavelengthNm": 360.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "U",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "V": {
+      "bandpassNm": 78.0,
+      "centralWavelengthNm": 530.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "V",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "g'": {
+      "bandpassNm": 150.0,
+      "centralWavelengthNm": 470.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "g'",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "h-alpha": {
+      "bandpassNm": 3.0,
+      "centralWavelengthNm": 656.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "h-alpha",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "i'": {
+      "bandpassNm": 150.0,
+      "centralWavelengthNm": 780.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "i'",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "lum": {
+      "bandpassNm": 282.0,
+      "centralWavelengthNm": 550.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "lum",
+      "isModifier": false,
+      "throughputFraction": null
+    },
+    "r'": {
+      "bandpassNm": 150.0,
+      "centralWavelengthNm": 625.0,
+      "filterSpecifierType": "filter",
+      "flatExposureScaler": null,
+      "flatExposureSunElevationCoeffPerDeg": null,
+      "id": "r'",
+      "isModifier": false,
+      "throughputFraction": null
+    }
+  },
+  "instruments": {
+    "105": {
+      "filterCombinationIds": [
+        [
+          "OIII"
+        ],
+        [
+          "U"
+        ],
+        [
+          "B"
+        ],
+        [
+          "V"
+        ],
+        [
+          "R"
+        ],
+        [
+          "I"
+        ],
+        [
+          "g'"
+        ],
+        [
+          "r'"
+        ],
+        [
+          "i'"
+        ],
+        [
+          "lum"
+        ],
+        [
+          "h-alpha"
+        ],
+        [
+          "SII"
+        ]
+      ],
+      "fov": [
+        0.46591580611764705,
+        0.46591580611764705
+      ],
+      "id": 105,
+      "instrumentType": "optical_imager",
+      "isActive": true,
+      "name": "Skynet Simulator — Optical, Atacama imager",
+      "pixelScale": 0.8189926279411764,
+      "telescopeId": 105
+    },
+    "106": {
+      "filterCombinationIds": [
+        [
+          "OIII"
+        ],
+        [
+          "U"
+        ],
+        [
+          "B"
+        ],
+        [
+          "V"
+        ],
+        [
+          "R"
+        ],
+        [
+          "I"
+        ],
+        [
+          "g'"
+        ],
+        [
+          "r'"
+        ],
+        [
+          "i'"
+        ],
+        [
+          "lum"
+        ],
+        [
+          "h-alpha"
+        ],
+        [
+          "SII"
+        ]
+      ],
+      "fov": [
+        0.46591580611764705,
+        0.46591580611764705
+      ],
+      "id": 106,
+      "instrumentType": "optical_imager",
+      "isActive": true,
+      "name": "Skynet Simulator — Optical, Karoo imager",
+      "pixelScale": 0.8189926279411764,
+      "telescopeId": 106
+    },
+    "107": {
+      "filterCombinationIds": [
+        [
+          "OIII"
+        ],
+        [
+          "U"
+        ],
+        [
+          "B"
+        ],
+        [
+          "V"
+        ],
+        [
+          "R"
+        ],
+        [
+          "I"
+        ],
+        [
+          "g'"
+        ],
+        [
+          "r'"
+        ],
+        [
+          "i'"
+        ],
+        [
+          "lum"
+        ],
+        [
+          "h-alpha"
+        ],
+        [
+          "SII"
+        ]
+      ],
+      "fov": [
+        0.46591580611764705,
+        0.46591580611764705
+      ],
+      "id": 107,
+      "instrumentType": "optical_imager",
+      "isActive": true,
+      "name": "Skynet Simulator — Optical, Outback imager",
+      "pixelScale": 0.8189926279411764,
+      "telescopeId": 107
+    },
+    "108": {
+      "filterCombinationIds": [
+        [
+          "B"
+        ],
+        [
+          "V"
+        ],
+        [
+          "R"
+        ],
+        [
+          "I"
+        ],
+        [
+          "lum"
+        ]
+      ],
+      "fov": [
+        0.46591580611764705,
+        0.46591580611764705
+      ],
+      "id": 108,
+      "instrumentType": "optical_imager",
+      "isActive": true,
+      "name": "PROMPT-CTIO-6 imager",
+      "pixelScale": 0.8189926279411764,
+      "telescopeId": 108
+    }
+  },
+  "observationType": "optical_imaging",
+  "observingAccounts": {
+    "69": {
+      "creditsUsed": 0.0,
+      "id": 69,
+      "isDeleted": false,
+      "lastActivityOn": null,
+      "managingGroupId": null,
+      "name": "Ada's account",
+      "observingPolicyId": null,
+      "order": 0,
+      "ownerId": 133,
+      "path": "69",
+      "queueAccessGrantIds": [
+        137,
+        138,
+        139
+      ],
+      "quotas": [],
+      "slug": "ada-s-account",
+      "sourceAccountGrantId": null,
+      "sourceAccountId": null
+    },
+    "70": {
+      "creditsUsed": 0.0,
+      "id": 70,
+      "isDeleted": false,
+      "lastActivityOn": null,
+      "managingGroupId": null,
+      "name": "Transient team",
+      "observingPolicyId": null,
+      "order": 0,
+      "ownerId": 134,
+      "path": "70",
+      "queueAccessGrantIds": [
+        140,
+        141
+      ],
+      "quotas": [],
+      "slug": "transient-team",
+      "sourceAccountGrantId": null,
+      "sourceAccountId": null
+    }
+  },
+  "pools": [
+    {
+      "accountId": 69,
+      "filterInstrumentIds": {
+        "B": [
+          105,
+          106,
+          107
+        ],
+        "I": [
+          105,
+          106,
+          107
+        ],
+        "OIII": [
+          105,
+          106,
+          107
+        ],
+        "R": [
+          105,
+          106,
+          107
+        ],
+        "SII": [
+          105,
+          106,
+          107
+        ],
+        "U": [
+          105,
+          106,
+          107
+        ],
+        "V": [
+          105,
+          106,
+          107
+        ],
+        "g'": [
+          105,
+          106,
+          107
+        ],
+        "h-alpha": [
+          105,
+          106,
+          107
+        ],
+        "i'": [
+          105,
+          106,
+          107
+        ],
+        "lum": [
+          105,
+          106,
+          107
+        ],
+        "r'": [
+          105,
+          106,
+          107
+        ]
+      },
+      "grantId": 99,
+      "grantType": "owner",
+      "instrumentIds": [
+        105,
+        106,
+        107
+      ],
+      "limits": {
+        "maxEpochCount": null,
+        "maxExposureTimeSec": 21600.0,
+        "maxSampleCount": null,
+        "maxTargetSnr": 10.0,
+        "maxWindowDurationSec": null,
+        "minEpochCount": 1,
+        "minExposureTimeSec": 0.1,
+        "minSampleCount": 1,
+        "minTargetSnr": 1.0
+      }
+    },
+    {
+      "accountId": 70,
+      "filterInstrumentIds": {
+        "B": [
+          105,
+          108
+        ],
+        "I": [
+          105,
+          108
+        ],
+        "OIII": [
+          105
+        ],
+        "R": [
+          105,
+          108
+        ],
+        "SII": [
+          105
+        ],
+        "U": [
+          105
+        ],
+        "V": [
+          105,
+          108
+        ],
+        "g'": [
+          105
+        ],
+        "h-alpha": [
+          105
+        ],
+        "i'": [
+          105
+        ],
+        "lum": [
+          105,
+          108
+        ],
+        "r'": [
+          105
+        ]
+      },
+      "grantId": 100,
+      "grantType": "member",
+      "instrumentIds": [
+        105,
+        108
+      ],
+      "limits": {
+        "maxEpochCount": null,
+        "maxExposureTimeSec": 21600.0,
+        "maxSampleCount": null,
+        "maxTargetSnr": 10.0,
+        "maxWindowDurationSec": null,
+        "minEpochCount": 1,
+        "minExposureTimeSec": 0.1,
+        "minSampleCount": 1,
+        "minTargetSnr": 1.0
+      }
+    }
+  ],
+  "telescopes": {
+    "105": {
+      "antennaIds": [],
+      "calibrationObservingAccountId": null,
+      "cameraIds": [
+        314
+      ],
+      "description": "",
+      "deviceIds": [
+        313,
+        314,
+        315
+      ],
+      "elevationM": 2600.0,
+      "enclosureId": null,
+      "enclosureUid": null,
+      "filterWheelIds": [
+        315
+      ],
+      "focuserIds": [],
+      "galleryItemIds": null,
+      "iauCode": null,
+      "id": 105,
+      "imageId": null,
+      "instrumentIds": [
+        105
+      ],
+      "ipCameraIds": null,
+      "isAvailable": true,
+      "isPublic": true,
+      "latitudeDeg": -23.9,
+      "location": "",
+      "longitudeDeg": -68.4,
+      "mountId": null,
+      "mountUid": null,
+      "name": "Skynet Simulator — Optical, Atacama",
+      "observatoryId": 35,
+      "observatoryUid": "63d1c9a0-71d7-4fd1-8a1e-d68a1781c114",
+      "otaIds": [
+        313
+      ],
+      "ownerId": 134,
+      "publicLatitudeDeg": -24.0,
+      "publicLongitudeDeg": -68.0,
+      "radioBackendIds": [],
+      "receiverIds": [],
+      "rotatorIds": [],
+      "shortName": null,
+      "slug": "sim-optical-atacama",
+      "uid": "34b1e63d-5de5-4f86-a6b7-8b747a0a7c38"
+    },
+    "106": {
+      "antennaIds": [],
+      "calibrationObservingAccountId": null,
+      "cameraIds": [
+        317
+      ],
+      "description": "",
+      "deviceIds": [
+        316,
+        317,
+        318
+      ],
+      "elevationM": 1300.0,
+      "enclosureId": null,
+      "enclosureUid": null,
+      "filterWheelIds": [
+        318
+      ],
+      "focuserIds": [],
+      "galleryItemIds": null,
+      "iauCode": null,
+      "id": 106,
+      "imageId": null,
+      "instrumentIds": [
+        106
+      ],
+      "ipCameraIds": null,
+      "isAvailable": true,
+      "isPublic": true,
+      "latitudeDeg": -31.3,
+      "location": "",
+      "longitudeDeg": 21.8,
+      "mountId": null,
+      "mountUid": null,
+      "name": "Skynet Simulator — Optical, Karoo",
+      "observatoryId": 35,
+      "observatoryUid": "63d1c9a0-71d7-4fd1-8a1e-d68a1781c114",
+      "otaIds": [
+        316
+      ],
+      "ownerId": 134,
+      "publicLatitudeDeg": -31.0,
+      "publicLongitudeDeg": 22.0,
+      "radioBackendIds": [],
+      "receiverIds": [],
+      "rotatorIds": [],
+      "shortName": null,
+      "slug": "sim-optical-karoo",
+      "uid": "4cfc307e-2712-4cc3-bf24-f82e216ccda2"
+    },
+    "107": {
+      "antennaIds": [],
+      "calibrationObservingAccountId": null,
+      "cameraIds": [
+        320
+      ],
+      "description": "",
+      "deviceIds": [
+        319,
+        320,
+        321
+      ],
+      "elevationM": 300.0,
+      "enclosureId": null,
+      "enclosureUid": null,
+      "filterWheelIds": [
+        321
+      ],
+      "focuserIds": [],
+      "galleryItemIds": null,
+      "iauCode": null,
+      "id": 107,
+      "imageId": null,
+      "instrumentIds": [
+        107
+      ],
+      "ipCameraIds": null,
+      "isAvailable": true,
+      "isPublic": true,
+      "latitudeDeg": -31.9,
+      "location": "",
+      "longitudeDeg": 141.5,
+      "mountId": null,
+      "mountUid": null,
+      "name": "Skynet Simulator — Optical, Outback",
+      "observatoryId": 35,
+      "observatoryUid": "63d1c9a0-71d7-4fd1-8a1e-d68a1781c114",
+      "otaIds": [
+        319
+      ],
+      "ownerId": 134,
+      "publicLatitudeDeg": -32.0,
+      "publicLongitudeDeg": 142.0,
+      "radioBackendIds": [],
+      "receiverIds": [],
+      "rotatorIds": [],
+      "shortName": null,
+      "slug": "sim-optical-outback",
+      "uid": "bc5679f0-733c-4997-af31-9afb7dcccf70"
+    },
+    "108": {
+      "antennaIds": [],
+      "calibrationObservingAccountId": null,
+      "cameraIds": [
+        323
+      ],
+      "description": "",
+      "deviceIds": [
+        322,
+        323,
+        324
+      ],
+      "elevationM": 2207.0,
+      "enclosureId": null,
+      "enclosureUid": null,
+      "filterWheelIds": [
+        324
+      ],
+      "focuserIds": [],
+      "galleryItemIds": null,
+      "iauCode": null,
+      "id": 108,
+      "imageId": null,
+      "instrumentIds": [
+        108
+      ],
+      "ipCameraIds": null,
+      "isAvailable": true,
+      "isPublic": true,
+      "latitudeDeg": -30.17,
+      "location": "",
+      "longitudeDeg": -70.81,
+      "mountId": null,
+      "mountUid": null,
+      "name": "PROMPT-CTIO-6",
+      "observatoryId": 35,
+      "observatoryUid": "63d1c9a0-71d7-4fd1-8a1e-d68a1781c114",
+      "otaIds": [
+        322
+      ],
+      "ownerId": 134,
+      "publicLatitudeDeg": -30.0,
+      "publicLongitudeDeg": -71.0,
+      "radioBackendIds": [],
+      "receiverIds": [],
+      "rotatorIds": [],
+      "shortName": null,
+      "slug": "prompt-ctio-6",
+      "uid": "c2f4f80d-7c5e-4dc5-aec5-b4dd3f5e31dd"
+    }
+  }
+}
