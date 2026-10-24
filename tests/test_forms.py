@@ -82,6 +82,8 @@ def data(target, **overrides) -> dict:
         "decay_index": "1.2",
         "spectral_index": "0.7",
         "max_airmass": "2",
+        # Pressing Validate keeps a valid form from submitting itself.
+        "validate": "Validate",
     }
     values.update(overrides)
     return values

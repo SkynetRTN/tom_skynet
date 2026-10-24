@@ -9,6 +9,7 @@ from aeonlib.skynet import (
     SkynetError,
     SkynetImagingRequest,
     SourceModel,
+    SubmittedObservation,
 )
 from crispy_forms.layout import HTML, Column, Div, Fieldset, Layout, Row
 from django import forms
@@ -19,7 +20,7 @@ from pydantic import ValidationError
 from tom_observations.facility import BaseRoboticObservationForm
 from tom_targets.models import Target
 
-from .client import facility_for_user
+from .client import error_message, facility_for_user
 from .credentials import SkynetCredentialsError
 from .pools import pool_labels, visible_pools
 
@@ -48,7 +49,13 @@ def _row_fields(row: int) -> tuple[str, str, str]:
 
 
 class SkynetImagingForm(BaseRoboticObservationForm):
-    """An optical imaging request sized by target SNR; Skynet chooses the telescope"""
+    """
+    An optical imaging request sized by target SNR; Skynet chooses the telescope.
+
+    A valid form submits itself to Skynet unless the Validate button was pressed:
+    TOM Toolkit's create view doesn't catch errors from submit_observation, so
+    submitting here is what lets a refusal reach the page as a form error.
+    """
 
     name = forms.CharField(max_length=256)
     grant = forms.TypedChoiceField(coerce=int, label="Time account")
@@ -79,9 +86,11 @@ class SkynetImagingForm(BaseRoboticObservationForm):
                 required=required, min_value=1, initial=1, label="Count"
             )
 
+        self.skynet = None
         self.pools: InstrumentPools | None = None
         self.unavailable = ""
         self.skynet_request: SkynetImagingRequest | None = None
+        self.submitted: SubmittedObservation | None = None
         self._load_pools()
         if not self.is_bound:
             start = datetime.now(UTC).replace(second=0, microsecond=0)
@@ -97,12 +106,13 @@ class SkynetImagingForm(BaseRoboticObservationForm):
     def _load_pools(self) -> None:
         user = getattr(getattr(self, "facility", None), "user", None)
         try:
-            self.pools = facility_for_user(user).instrument_pools()
+            self.skynet = facility_for_user(user)
+            self.pools = self.skynet.instrument_pools()
         except SkynetCredentialsError as exc:
             self.unavailable = f"{exc}. Set your Skynet API token first."
             return
         except (AuthenticationError, ServiceNetworkError, SkynetError) as exc:
-            self.unavailable = f"Skynet is unavailable: {exc}"
+            self.unavailable = f"Skynet is unavailable: {error_message(exc)}"
             return
 
         shown = visible_pools(self.pools)
@@ -211,6 +221,32 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             label = self.fields[name].label or name.replace("_", " ").capitalize()
             for message in errors:
                 self.add_error(None, f"{label}: {message}")
+
+    def is_valid(self):
+        valid = super().is_valid()
+        if valid and self.submitted is None and "validate" not in self.data:
+            self._submit()
+        return not self.errors
+
+    def _submit(self) -> None:
+        assert self.skynet is not None and self.skynet_request is not None
+        try:
+            self.submitted = self.skynet.submit(self.skynet_request)
+        except (
+            ValueError,
+            SkynetError,
+            AuthenticationError,
+            ServiceNetworkError,
+        ) as exc:
+            self.add_error(
+                None, f"Skynet didn't accept the request: {error_message(exc)}"
+            )
+
+    def observation_payload(self) -> dict:
+        payload = super().observation_payload()
+        if self.submitted is not None:
+            payload["skynet_observation_id"] = self.submitted.id
+        return payload
 
     def serialize_parameters(self) -> dict:
         """The cleaned data in a JSON-safe form, for ObservationRecord.parameters"""
