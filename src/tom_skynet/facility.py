@@ -1,7 +1,10 @@
 import logging
 
+import requests
 from aeonlib.exceptions import AuthenticationError, ServiceNetworkError
 from aeonlib.skynet import STATES, ObservationProgress, SkynetError
+from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db.models import Q
 from tom_dataproducts.models import DataProduct
 from tom_observations.facility import BaseRoboticObservationFacility
@@ -17,6 +20,8 @@ logger = logging.getLogger(__name__)
 # Keeps Skynet's file ids apart from other facilities' in the TOM-wide
 # DataProduct.product_id
 PRODUCT_PREFIX = "skynet:"
+
+DOWNLOAD_TIMEOUT_SEC = 120
 
 
 class SkynetSubmitError(Exception):
@@ -150,6 +155,38 @@ class SkynetFacility(BaseRoboticObservationFacility):
             saved = DataProduct.objects.filter(observation_record=observation_record)
             return {"saved": list(saved), "unsaved": []}
 
+    def save_data_products(self, observation_record, product_id=None):
+        """
+        Download and save the final products not saved yet. Unlike the base
+        class, the DataProduct is only written once its file has downloaded, so
+        a failed download (an expired URL, Skynet's storage unreachable) leaves
+        nothing behind and is retried on the next poll.
+        """
+        from tom_dataproducts.utils import create_image_dataproduct
+
+        saved = []
+        for product in self.data_products(
+            observation_record.observation_id, product_id
+        ):
+            existing = DataProduct.objects.filter(product_id=product["id"]).first()
+            if existing is not None and existing.data:
+                saved.append(existing)
+                continue
+            response = requests.get(product["url"], timeout=DOWNLOAD_TIMEOUT_SEC)
+            response.raise_for_status()
+            data_product = existing or DataProduct(
+                product_id=product["id"],
+                target=observation_record.target,
+                observation_record=observation_record,
+            )
+            data_product.data.save(product["filename"], ContentFile(response.content))
+            logger.info("Saved Skynet data product %s", data_product.data)
+            if getattr(settings, "AUTO_THUMBNAILS", False):
+                create_image_dataproduct(data_product)
+                data_product.get_preview()
+            saved.append(data_product)
+        return saved
+
     def data_products(self, observation_id, product_id=None):
         """The final science files, with presigned URLs; a re-processed frame is a new file"""
         skynet = facility_for_observation(observation_id)
@@ -169,7 +206,9 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
 def _unsaved_final_products(progress: ObservationProgress) -> set[str]:
     final = {PRODUCT_PREFIX + p.file_id for p in progress.products if p.is_final}
-    saved = DataProduct.objects.filter(product_id__in=final).values_list(
-        "product_id", flat=True
+    saved = (
+        DataProduct.objects.filter(product_id__in=final)
+        .exclude(data="")
+        .values_list("product_id", flat=True)
     )
     return final - set(saved)

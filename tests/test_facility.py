@@ -17,6 +17,7 @@ pytestmark = pytest.mark.django_db
 
 PUBLISH = ("POST", "/v1/observation-specs:publish")
 PRESIGN = ("POST", "/v1/files/data/presign")
+FILE_ID = load("progress_products.json")["products"][0]["fileId"]
 
 
 @pytest.fixture
@@ -256,6 +257,39 @@ class TestDataProducts:
         facility.update_observation_status("317")
         assert len(skynet_api.sent(*PRESIGN)) == 1
         assert len(skynet_api.downloads) == 1
+
+    def test_a_failed_download_saves_nothing_and_is_retried(
+        self, ada, target, skynet_api
+    ):
+        polled = record(ada, target)
+        skynet_api.progress["317"] = products(productsFinal=True, state="completed")
+        skynet_api.download_status = 403  # an expired presigned URL
+        facility = SkynetFacility()
+        assert facility.update_all_observation_statuses() == [
+            ("317", f"403 for https://minio.invalid/{FILE_ID}")
+        ]
+        assert not DataProduct.objects.exists()
+        assert not SkynetRecordState.objects.filter(
+            record=polled, products_final=True
+        ).exists()
+
+        skynet_api.download_status = 200
+        assert facility.update_all_observation_statuses() == []
+        (saved,) = DataProduct.objects.all()
+        assert saved.data
+        assert SkynetRecordState.objects.get(record=polled).products_final
+
+    def test_an_empty_product_left_by_the_base_class_is_filled(
+        self, ada, target, skynet_api
+    ):
+        polled = record(ada, target)
+        DataProduct.objects.create(
+            product_id=f"skynet:{FILE_ID}", target=target, observation_record=polled
+        )
+        skynet_api.progress["317"] = products()
+        SkynetFacility().update_observation_status("317")
+        (saved,) = DataProduct.objects.all()
+        assert saved.data.name.endswith("reduced-0001.fits")
 
     def test_a_frame_still_processing_is_not_saved(self, ada, target, skynet_api):
         record(ada, target)

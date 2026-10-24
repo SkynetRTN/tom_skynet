@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+import requests
 from aeonlib.skynet import SkynetFacility as AeonlibSkynetFacility
 
 DATA = Path(__file__).parent / "data"
@@ -22,6 +23,7 @@ class SkynetAPI:
         self.publish: tuple[int, dict] = (201, {"id": 310, "uid": "obs-310"})
         self.requests: list[httpx.Request] = []
         self.downloads: list[str] = []
+        self.download_status = 200
 
     def sent(self, method: str, path: str) -> list[httpx.Request]:
         return [r for r in self.requests if r.method == method and r.url.path == path]
@@ -68,7 +70,19 @@ def skynet_api(monkeypatch, settings, tmp_path):
 
     def download(url, *args, **kwargs):
         api.downloads.append(url)
-        return SimpleNamespace(content=b"SIMPLE  =                    T")
+        response = httpx.Response(
+            api.download_status,
+            content=b"SIMPLE  =                    T",
+            request=httpx.Request("GET", url),
+        )
 
-    monkeypatch.setattr("tom_observations.facility.requests.get", download)
+        def raise_for_status():
+            if response.is_error:
+                raise requests.HTTPError(f"{response.status_code} for {url}")
+
+        return SimpleNamespace(
+            content=response.content, raise_for_status=raise_for_status
+        )
+
+    monkeypatch.setattr("tom_skynet.facility.requests.get", download)
     return api
