@@ -1,0 +1,35 @@
+{
+  "id": 317,
+  "products": [
+    {
+      "airmass": 1.21,
+      "assetId": 226,
+      "exposureTimeSec": 60.0,
+      "fileId": "6b2c5420-2fd9-4eea-8e8c-4ae21e14561c",
+      "filename": "reduced-0001.fits",
+      "filterId": "lum",
+      "instrumentId": 295,
+      "isFinal": true,
+      "isReduced": true,
+      "pixelScaleArcsecPerPx": null,
+      "processingFlags": [
+        "reduced",
+        "wcs_solved"
+      ],
+      "rootAssetId": 225,
+      "takenAtStartUtc": "2026-10-23T13:32:15Z",
+      "taskId": 155,
+      "telescopeId": 462
+    }
+  ],
+  "productsFinal": false,
+  "progressFraction": 0.0,
+  "resultCounts": {
+    "fulfilled": 1
+  },
+  "scheduledEnd": "2026-10-23T13:52:15Z",
+  "scheduledStart": "2026-10-23T13:32:15Z",
+  "state": "in_progress",
+  "status": "active",
+  "uid": "5ee30b61-77e6-45cf-9b08-9205adaedb61"
+}

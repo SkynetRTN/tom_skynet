@@ -1,0 +1,15 @@
+{
+  "id": 313,
+  "products": [],
+  "productsFinal": true,
+  "progressFraction": 0.0,
+  "resultCounts": {
+    "canceled": 1,
+    "fulfilled": 1
+  },
+  "scheduledEnd": "2026-10-21T12:52:15Z",
+  "scheduledStart": "2026-10-21T12:32:15Z",
+  "state": "partially_completed",
+  "status": "completed",
+  "uid": "1570654d-1652-4228-8816-fa8ff3c2a66f"
+}

@@ -1,12 +1,14 @@
 import json
 
 import pytest
+from django.core.management import call_command
 from django.urls import reverse
+from tom_dataproducts.models import DataProduct
 from tom_observations.models import ObservationRecord
 from tom_targets.models import Target
 
 from tom_skynet.facility import SkynetFacility, SkynetSubmitError
-from tom_skynet.models import SkynetProfile
+from tom_skynet.models import SkynetProfile, SkynetRecordState
 
 from .conftest import load
 
@@ -57,6 +59,30 @@ def form_data(target, **overrides) -> dict:
     }
     values.update(overrides)
     return values
+
+
+def record(owner, target, observation_id="317", status=""):
+    return ObservationRecord.objects.create(
+        target=target,
+        user=owner,
+        facility="Skynet",
+        observation_id=observation_id,
+        status=status,
+        parameters={},
+    )
+
+
+def progress(state="IN_PROGRESS", **changes) -> dict:
+    return load(f"progress/{state}.json") | changes
+
+
+def products(**changes) -> dict:
+    """progress_products.json: observation 317, one final reduced product"""
+    return load("progress_products.json") | changes
+
+
+def product(file_id: str, **changes) -> dict:
+    return load("progress_products.json")["products"][0] | {"fileId": file_id} | changes
 
 
 class TestSubmit:
@@ -130,3 +156,78 @@ class TestSubmit:
         with pytest.raises(SkynetSubmitError, match="from 1.0 to 10.0"):
             facility.submit_observation(payload)
         assert not skynet_api.sent(*PUBLISH)
+
+
+class TestStatus:
+    def test_updatestatus_needs_no_username(self, ada, target, skynet_api):
+        record(ada, target, "311")
+        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        call_command("updatestatus")
+        updated = ObservationRecord.objects.get()
+        assert updated.status == "SCHEDULED"
+        assert updated.scheduled_start is not None
+        (request,) = skynet_api.requests
+        assert request.headers["Authorization"] == "Bearer ada-token"
+
+    def test_the_record_owners_token_whoever_is_set(
+        self, ada, target, skynet_api, django_user_model
+    ):
+        record(ada, target, "311")
+        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        facility = SkynetFacility()
+        facility.set_user(django_user_model.objects.create_user(username="bob"))
+        assert facility.get_observation_status("311")["state"] == "SCHEDULED"
+        (request,) = skynet_api.requests
+        assert request.headers["Authorization"] == "Bearer ada-token"
+
+    def test_a_record_without_a_token_fails_alone(
+        self, ada, target, skynet_api, django_user_model
+    ):
+        bob = django_user_model.objects.create_user(username="bob")
+        record(bob, target, "300")
+        record(ada, target, "311")
+        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        failed = SkynetFacility().update_all_observation_statuses()
+        assert failed == [("300", "No Skynet API token for bob")]
+        assert ObservationRecord.objects.get(observation_id="311").status == "SCHEDULED"
+
+    def test_a_failed_state(self, ada, target, skynet_api):
+        expired = record(ada, target, "315")
+        skynet_api.progress["315"] = progress("WINDOW_EXPIRED", id=315)
+        SkynetFacility().update_observation_status("315")
+        expired.refresh_from_db()
+        assert expired.status == "WINDOW_EXPIRED"
+        assert expired.terminal and expired.failed
+
+    def test_completed_is_polled_until_its_products_are_final(
+        self, ada, target, skynet_api
+    ):
+        polled = record(ada, target)
+        facility = SkynetFacility()
+
+        def polls() -> int:
+            before = len(skynet_api.sent("GET", "/v1/observations/317/progress"))
+            assert facility.update_all_observation_statuses() == []
+            return len(skynet_api.sent("GET", "/v1/observations/317/progress")) - before
+
+        skynet_api.progress["317"] = products(state="completed")
+        assert polls() == 2  # the state, then the products to save
+        polled.refresh_from_db()
+        assert polled.status == "COMPLETED"
+        assert DataProduct.objects.count() == 1
+        assert not SkynetRecordState.objects.get(record=polled).products_final
+
+        assert polls() == 1  # terminal, but still polled
+
+        skynet_api.progress["317"] = products(state="completed", productsFinal=True)
+        assert polls() == 1
+        assert SkynetRecordState.objects.get(record=polled).products_final
+        assert polls() == 0
+
+    def test_canceled_with_nothing_stops_after_one_poll(self, ada, target, skynet_api):
+        record(ada, target, "314")
+        skynet_api.progress["314"] = progress("CANCELED")
+        facility = SkynetFacility()
+        assert facility.update_all_observation_statuses() == []
+        assert facility.update_all_observation_statuses() == []
+        assert len(skynet_api.requests) == 1

@@ -1,0 +1,14 @@
+{
+  "id": 315,
+  "products": [],
+  "productsFinal": true,
+  "progressFraction": 0.0,
+  "resultCounts": {
+    "canceled": 1
+  },
+  "scheduledEnd": null,
+  "scheduledStart": null,
+  "state": "window_expired",
+  "status": "canceled",
+  "uid": "c9bcc356-c87a-4968-8d4e-fe5862a70355"
+}

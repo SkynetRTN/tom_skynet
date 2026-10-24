@@ -1,0 +1,14 @@
+{
+  "id": 312,
+  "products": [],
+  "productsFinal": true,
+  "progressFraction": 0.0,
+  "resultCounts": {
+    "fulfilled": 2
+  },
+  "scheduledEnd": "2026-10-23T12:52:15Z",
+  "scheduledStart": "2026-10-23T12:32:15Z",
+  "state": "completed",
+  "status": "completed",
+  "uid": "c0b1971c-9dac-43a9-bd93-f569edc705d2"
+}

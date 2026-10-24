@@ -17,3 +17,19 @@ class SkynetProfile(models.Model):
 
     def __str__(self):
         return f"Skynet profile of {self.user}"
+
+
+class SkynetRecordState(models.Model):
+    """What Skynet reports about an observation record beyond its status"""
+
+    record = models.OneToOneField(
+        "tom_observations.ObservationRecord",
+        on_delete=models.CASCADE,
+        related_name="skynet_state",
+    )
+    products_final = models.BooleanField(default=False)
+    """Skynet's productsFinal: the state is terminal and no products will be added"""
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Skynet state of {self.record}"
