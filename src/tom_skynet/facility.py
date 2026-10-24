@@ -110,9 +110,22 @@ class SkynetFacility(BaseRoboticObservationFacility):
             record.save()
             if _unsaved_final_products(progress):
                 self.save_data_products(record)
-            # Only once the products are saved, so a failed download is retried
+            # Finished only once every final product the progress lists is
+            # saved. A save can return without error and still miss some: the
+            # presign endpoint can leave a file out (on a signing error, say),
+            # and AEONlib then drops that product rather than raising.
+            missing = _unsaved_final_products(progress)
+            if missing:
+                logger.warning(
+                    "Skynet observation %s: %d final product(s) not saved yet "
+                    "(no download URL); will retry: %s",
+                    observation_id,
+                    len(missing),
+                    ", ".join(sorted(missing)),
+                )
             SkynetRecordState.objects.update_or_create(
-                record=record, defaults={"products_final": progress.products_final}
+                record=record,
+                defaults={"products_final": progress.products_final and not missing},
             )
 
     def update_all_observation_statuses(self, target=None):

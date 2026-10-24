@@ -279,6 +279,40 @@ class TestDataProducts:
         assert saved.data
         assert SkynetRecordState.objects.get(record=polled).products_final
 
+    def test_a_product_the_presign_leaves_out_keeps_the_record_polled(
+        self, ada, target, skynet_api
+    ):
+        polled = record(ada, target)
+        second = product("second-file", assetId=227, filename="reduced-0002.fits")
+        skynet_api.progress["317"] = products(
+            state="completed", productsFinal=True, products=[product(FILE_ID), second]
+        )
+        skynet_api.unsigned = {"second-file"}  # e.g. a signing error
+        facility = SkynetFacility()
+        assert facility.update_all_observation_statuses() == []
+        assert list(DataProduct.objects.values_list("product_id", flat=True)) == [
+            f"skynet:{FILE_ID}"
+        ]
+        assert not SkynetRecordState.objects.get(record=polled).products_final
+
+        skynet_api.unsigned = set()
+        assert facility.update_all_observation_statuses() == []
+        assert DataProduct.objects.count() == 2
+        assert SkynetRecordState.objects.get(record=polled).products_final
+        before = len(skynet_api.requests)
+        assert facility.update_all_observation_statuses() == []
+        assert len(skynet_api.requests) == before  # finished: no longer polled
+
+    def test_an_empty_presign_answer_saves_nothing_and_keeps_polling(
+        self, ada, target, skynet_api
+    ):
+        polled = record(ada, target)
+        skynet_api.progress["317"] = products(state="completed", productsFinal=True)
+        skynet_api.unsigned = {FILE_ID}
+        SkynetFacility().update_observation_status("317")
+        assert not DataProduct.objects.exists()
+        assert not SkynetRecordState.objects.get(record=polled).products_final
+
     def test_an_empty_product_left_by_the_base_class_is_filled(
         self, ada, target, skynet_api
     ):

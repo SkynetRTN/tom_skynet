@@ -24,6 +24,8 @@ class SkynetAPI:
         self.requests: list[httpx.Request] = []
         self.downloads: list[str] = []
         self.download_status = 200
+        #: File ids the presign endpoint leaves out of its answer
+        self.unsigned: set[str] = set()
 
     def sent(self, method: str, path: str) -> list[httpx.Request]:
         return [r for r in self.requests if r.method == method and r.url.path == path]
@@ -38,7 +40,11 @@ class SkynetAPI:
             return httpx.Response(status, json=body)
         if path == "/v1/files/data/presign":
             ids = json.loads(request.content)["fileIds"]
-            items = [{"fileId": i, "url": f"https://minio.invalid/{i}"} for i in ids]
+            items = [
+                {"fileId": i, "url": f"https://minio.invalid/{i}"}
+                for i in ids
+                if i not in self.unsigned
+            ]
             return httpx.Response(200, json={"expiresIn": 900, "items": items})
         observation_id = path.removeprefix("/v1/observations/").removesuffix(
             "/progress"
