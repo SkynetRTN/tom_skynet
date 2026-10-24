@@ -1,11 +1,15 @@
+import pytest
 from django.apps import apps
+from django.core.management import call_command
 from tom_observations.facility import get_service_class, get_service_classes
 
+from tom_skynet.apps import TomSkynetConfig
 from tom_skynet.facility import SkynetFacility
 
 
 def test_the_app_registers_the_facility():
     config = apps.get_app_config("tom_skynet")
+    assert isinstance(config, TomSkynetConfig)
     assert config.observation_facilities() == [
         {"class": "tom_skynet.facility.SkynetFacility"}
     ]
@@ -33,3 +37,8 @@ def test_aeonlib_brings_the_skynet_facility():
     from aeonlib.skynet import SkynetFacility as AeonlibSkynetFacility
 
     assert AeonlibSkynetFacility.__module__ == "aeonlib.skynet.facility"
+
+
+@pytest.mark.django_db
+def test_no_missing_migrations():
+    call_command("makemigrations", "tom_skynet", check=True, dry_run=True)

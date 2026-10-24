@@ -19,6 +19,8 @@ Source = "https://github.com/SkynetRTN/tom_skynet"
 
 [dependency-groups]
 dev = [
+    # Type stubs for `ty`: Django adds `objects` and `_meta` to models at runtime.
+    "django-stubs>=5.2,<5.3",
     "pytest>=8",
     "pytest-django>=4.9",
 ]
@@ -40,4 +42,5 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.ruff]
+extend-exclude = ["src/tom_skynet/migrations"]
 force-exclude = true
