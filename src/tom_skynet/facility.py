@@ -3,6 +3,7 @@ import logging
 import requests
 from aeonlib.exceptions import AuthenticationError, ServiceNetworkError
 from aeonlib.skynet import STATES, ObservationProgress, SkynetError
+from django import forms
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db.models import Q
@@ -10,7 +11,7 @@ from tom_dataproducts.models import DataProduct
 from tom_observations.facility import BaseRoboticObservationFacility
 from tom_observations.models import ObservationRecord
 
-from .client import facility_for_observation
+from .client import error_message, facility_for_observation
 from .credentials import FACILITY_NAME, SkynetCredentialsError, web_root
 from .forms import SkynetImagingForm
 from .models import SkynetRecordState
@@ -88,6 +89,46 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
     def get_observing_sites(self):
         return {}
+
+    def cancel_observation(self, observation_id):
+        """
+        Cancel the observation on Skynet as the record's owner. Frames already
+        taken are kept, so it can end PARTIALLY_COMPLETED rather than CANCELED.
+        """
+        record = (
+            ObservationRecord.objects.filter(
+                facility=self.name, observation_id=str(observation_id)
+            )
+            .select_related("user")
+            .first()
+        )
+        # TOM Toolkit's cancel view only requires a login, and the cancel goes
+        # out with the owner's token
+        user = self.user
+        if (
+            record is not None
+            and user is not None
+            and user != record.user
+            and not user.is_superuser
+        ):
+            raise forms.ValidationError(
+                "Only the TOM user who submitted it can cancel a Skynet observation"
+            )
+        try:
+            skynet = facility_for_observation(observation_id)
+            if skynet.state(observation_id).terminal:
+                return True
+            skynet.cancel(observation_id)
+        except (
+            SkynetCredentialsError,
+            AuthenticationError,
+            ServiceNetworkError,
+            SkynetError,
+        ) as exc:
+            raise forms.ValidationError(
+                f"Skynet didn't cancel it: {error_message(exc)}"
+            ) from exc
+        return True
 
     def get_observation_status(self, observation_id):
         state = facility_for_observation(observation_id).state(observation_id)

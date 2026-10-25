@@ -26,6 +26,8 @@ class SkynetAPI:
         self.download_status = 200
         #: File ids the presign endpoint leaves out of its answer
         self.unsigned: set[str] = set()
+        #: The answer to a cancel; a 2xx marks the observation canceled
+        self.cancel_status = 200
 
     def sent(self, method: str, path: str) -> list[httpx.Request]:
         return [r for r in self.requests if r.method == method and r.url.path == path]
@@ -49,6 +51,17 @@ class SkynetAPI:
         observation_id = path.removeprefix("/v1/observations/").removesuffix(
             "/progress"
         )
+        if request.method == "PATCH" and observation_id in self.progress:
+            if self.cancel_status >= 400:
+                return httpx.Response(
+                    self.cancel_status, json={"detail": "Observation can't be canceled"}
+                )
+            self.progress[observation_id] = self.progress[observation_id] | {
+                "state": "canceled",
+                "status": "canceled",
+                "productsFinal": True,
+            }
+            return httpx.Response(200, json={"id": int(observation_id)})
         if observation_id in self.progress:
             return httpx.Response(200, json=self.progress[observation_id])
         return httpx.Response(404, json={"detail": "Observation not found"})

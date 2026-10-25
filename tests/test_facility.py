@@ -236,6 +236,78 @@ class TestStatus:
         assert len(skynet_api.requests) == 1
 
 
+class TestCancel:
+    PATCH = ("PATCH", "/v1/observations/317")
+
+    def cancel(self, client, user, observation):
+        client.force_login(user)
+        return client.get(
+            reverse("tom_observations:cancel", kwargs={"pk": observation.pk}),
+            follow=True,
+        )
+
+    def test_the_record_page_cancels_as_the_owner(
+        self, client, ada, target, skynet_api
+    ):
+        pending = record(ada, target, status="PENDING")
+        skynet_api.progress["317"] = progress("PENDING", id=317)
+        response = self.cancel(client, ada, pending)
+        assert b"Successfully cancelled" in response.content
+        (patch,) = skynet_api.sent(*self.PATCH)
+        assert json.loads(patch.content) == {"status": "canceled"}
+        assert patch.headers["Authorization"] == "Bearer ada-token"
+        pending.refresh_from_db()
+        assert pending.status == "CANCELED"
+
+    def test_another_tom_user_cannot_cancel(
+        self, client, ada, target, skynet_api, django_user_model
+    ):
+        pending = record(ada, target, status="PENDING")
+        skynet_api.progress["317"] = progress("PENDING", id=317)
+        bob = django_user_model.objects.create_user(username="bob")
+        response = self.cancel(client, bob, pending)
+        assert b"Only the TOM user who submitted it" in response.content
+        assert not skynet_api.sent(*self.PATCH)
+
+    def test_staff_can_cancel(self, client, ada, target, skynet_api, django_user_model):
+        pending = record(ada, target, status="PENDING")
+        skynet_api.progress["317"] = progress("PENDING", id=317)
+        admin = django_user_model.objects.create_superuser(username="root")
+        self.cancel(client, admin, pending)
+        (patch,) = skynet_api.sent(*self.PATCH)
+        assert patch.headers["Authorization"] == "Bearer ada-token"
+
+    def test_a_terminal_observation_is_left_alone(self, ada, target, skynet_api):
+        record(ada, target, status="COMPLETED")
+        skynet_api.progress["317"] = products(state="completed")
+        assert SkynetFacility().cancel_observation("317") is True
+        assert not skynet_api.sent(*self.PATCH)
+
+    def test_a_refusal_reaches_the_page(self, client, ada, target, skynet_api):
+        pending = record(ada, target, status="PENDING")
+        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.cancel_status = 409
+        response = self.cancel(client, ada, pending)
+        assert (
+            "Skynet didn&#x27;t cancel it: Observation can&#x27;t be canceled (HTTP 409)"
+            in response.content.decode()
+        )
+
+    def test_the_rest_api_cancels_as_the_owner(self, ada, target, skynet_api):
+        from rest_framework.test import APIClient
+
+        pending = record(ada, target, status="PENDING")
+        assign_perm("tom_observations.view_observationrecord", ada, pending)
+        assign_perm("tom_observations.change_observationrecord", ada, pending)
+        skynet_api.progress["317"] = progress("PENDING", id=317)
+        api = APIClient()
+        api.force_authenticate(ada)
+        response = api.patch(f"/api/observations/{pending.pk}/cancel/")
+        assert response.status_code == 200, response.content
+        assert response.json()["status"] == "CANCELED"
+        assert len(skynet_api.sent(*self.PATCH)) == 1
+
+
 class TestDataProducts:
     def test_final_products_are_saved_while_polling(self, ada, target, skynet_api):
         polled = record(ada, target)
