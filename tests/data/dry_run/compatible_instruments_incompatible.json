@@ -1,0 +1,11 @@
+{
+  "results": [
+    {
+      "compatible": false,
+      "instrumentId": 1,
+      "reasons": [
+        "No optical_imaging request matches the instrument's capabilities."
+      ]
+    }
+  ]
+}

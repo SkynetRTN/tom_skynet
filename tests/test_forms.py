@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 from aeonlib.exceptions import AuthenticationError
-from aeonlib.skynet import InstrumentPools
+from aeonlib.skynet import InstrumentPools, SpecValidation
 from crispy_forms.utils import render_crispy_form
 from tom_targets.models import Target
 
@@ -26,9 +26,16 @@ def load(name: str):
 class FakeSkynet:
     def __init__(self, pools):
         self.pools = pools
+        self.validation = SpecValidation(valid=True)
 
     def instrument_pools(self):
         return self.pools
+
+    def validate(self, request):
+        return self.validation
+
+    def instrument_preview(self, request):
+        return []
 
 
 @pytest.fixture
@@ -130,7 +137,19 @@ class TestChoices:
 
     def test_the_layout_renders_every_row(self, skynet, facility):
         html = render_crispy_form(form(facility))
-        for name in ("grant", "filter_3", "target_snr_3", "count_3", "spectral_index"):
+        for name in (
+            "grant",
+            "exposure_mode",
+            "filter_3",
+            "target_snr_3",
+            "exposure_time_3",
+            "count_3",
+            "spectral_index",
+            "extinction_av",
+            "epoch_count",
+            "cadence_period_hours",
+            "min_moon_separation",
+        ):
             assert f'name="{name}"' in html
 
 
@@ -256,3 +275,121 @@ class TestFacilityForms:
         facility = SkynetFacility()
         assert facility.get_form("IMAGING") is SkynetImagingForm
         assert facility.get_form_classes_for_display() == {"IMAGING": SkynetImagingForm}
+
+
+def exposure_data(target, **overrides) -> dict:
+    """The form data for the contract's exposure-time request (publish_exposure.json)"""
+    values = data(
+        target,
+        name="AT 2026abc fixed exposure",
+        exposure_mode="exposure_time",
+        filter_1="V",
+        target_snr_1="",
+        exposure_time_1="600",
+        count_1="1",
+        filter_2="",
+        target_snr_2="",
+        count_2="",
+        magnitude="",
+        magnitude_filter="",
+        measured_at="",
+        event_time="",
+        decay_index="",
+        spectral_index="",
+        max_airmass="",
+    )
+    values.update(overrides)
+    return values
+
+
+class TestExposureTime:
+    def test_builds_the_contract_publish_body(self, skynet, facility, target):
+        bound = form(facility, exposure_data(target))
+        assert bound.is_valid(), bound.errors
+        assert bound.skynet_request is not None
+        body = bound.skynet_request.to_publish_body(owner_id=133)
+        assert body == load("publish_exposure.json")
+
+    def test_a_row_needs_its_exposure_time(self, skynet, facility, target):
+        bound = form(facility, exposure_data(target, exposure_time_1=""))
+        assert not bound.is_valid()
+        assert "Required" in messages(bound, "exposure_time_1")
+
+    def test_exposure_time_outside_the_accounts_limits(self, skynet, facility, target):
+        bound = form(facility, exposure_data(target, exposure_time_1="30000"))
+        assert not bound.is_valid()
+        assert messages(bound, "exposure_time_1") == (
+            "Choose a total exposure time from 0.1 to 21600.0 s."
+        )
+
+    def test_snr_needs_the_source_brightness(self, skynet, facility, target):
+        bound = form(facility, data(target, magnitude="", event_time=""))
+        assert not bound.is_valid()
+        assert messages(bound, "magnitude") == "Required for a target SNR."
+        assert messages(bound, "event_time") == "Required for a target SNR."
+
+
+class TestCadenceAndConstraints:
+    def test_builds_the_contract_cadence_body(self, skynet, facility, target):
+        values = data(
+            target,
+            name="AT 2026abc nightly",
+            grant="100",
+            target_snr_1="5",
+            count_1="2",
+            filter_2="",
+            target_snr_2="",
+            count_2="",
+            max_airmass="",
+            min_moon_separation="30",
+            epoch_count="4",
+            cadence_period_hours="24",
+        )
+        bound = form(facility, values)
+        assert bound.is_valid(), bound.errors
+        assert bound.skynet_request is not None
+        body = bound.skynet_request.to_publish_body(owner_id=134)
+        assert body == load("publish_cadence.json")
+
+    def test_epochs_need_a_period(self, skynet, facility, target):
+        bound = form(facility, data(target, epoch_count="3"))
+        assert not bound.is_valid()
+        assert messages(bound, "cadence_period_hours") == (
+            "Required for more than one epoch."
+        )
+
+    def test_extinction_reaches_the_source_model(self, skynet, facility, target):
+        bound = form(facility, data(target, extinction_av="0.4", rv="3.3"))
+        assert bound.is_valid(), bound.errors
+        assert bound.skynet_request is not None
+        source = bound.skynet_request.source
+        assert source is not None
+        assert (source.extinction_av, source.rv) == (0.4, 3.3)
+
+
+class TestSkynetValidation:
+    def test_skynets_field_errors_land_on_the_right_row(self, skynet, facility, target):
+        # The first row is empty, so the request's second exposure is row 3
+        values = data(
+            target,
+            filter_1="i'",
+            filter_2="",
+            target_snr_2="",
+            count_2="",
+            filter_3="r'",
+            target_snr_3="5",
+            count_3="1",
+        )
+        skynet.validation = SpecValidation(
+            valid=False,
+            errors={
+                "exposures.1.target_snr": ["Too faint"],
+                "window.end": ["Too long"],
+                "non_field_errors": ["Something else"],
+            },
+        )
+        bound = form(facility, values)
+        assert not bound.is_valid()
+        assert messages(bound, "target_snr_3") == "Too faint"
+        assert messages(bound, "end") == "Too long"
+        assert "Something else" in messages(bound, "__all__")

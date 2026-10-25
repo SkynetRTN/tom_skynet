@@ -1,0 +1,47 @@
+{
+  "ownerId": 133,
+  "observingGrantIds": [
+    99
+  ],
+  "name": "AT 2026abc fixed exposure",
+  "spec": {
+    "schemaKind": "observation_spec",
+    "schemaVersion": 1,
+    "data": {
+      "name": "AT 2026abc fixed exposure",
+      "startAfter": "2026-11-01T00:00:00Z",
+      "cancelOn": "2026-11-08T00:00:00Z",
+      "copiesMode": "single",
+      "instrumentMode": "none",
+      "target": {
+        "name": "AT 2026abc",
+        "position": {
+          "positionType": "fixed",
+          "coordinates": {
+            "coordinateType": "equatorial",
+            "raDeg": 150.025,
+            "decDeg": -32.4
+          }
+        }
+      },
+      "opticalImagingConfiguration": {
+        "trackingMode": "sidereal",
+        "ditherStrategy": "none",
+        "temporalOffsetSec": 0.0,
+        "maxTiles": 1,
+        "tileOverlap": 0.1
+      },
+      "requests": [
+        {
+          "requestType": "optical_imaging",
+          "order": 0,
+          "filterSpecifierIds": [
+            "V"
+          ],
+          "exposureTimeSec": 600.0,
+          "sampleCount": 1
+        }
+      ]
+    }
+  }
+}

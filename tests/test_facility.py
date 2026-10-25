@@ -108,17 +108,70 @@ class TestSubmit:
         assert created.parameters["grant"] == 99
         assert created.parameters["start"] == "2026-11-01T00:00:00+00:00"
 
-    def test_validate_does_not_submit(
+    def test_validate_previews_the_telescopes_and_does_not_submit(
         self, client, ada, target, skynet_api, create_url
     ):
+        skynet_api.unobservable = {105}
         client.force_login(ada)
         values = form_data(target, validate="Validate")
         del values["submit"]
         response = client.post(create_url, values)
         assert response.status_code == 200
-        assert b"This observation is valid." in response.content
+        page = response.content.decode()
+        assert (
+            "Skynet accepts this request. It can run on 2 of 3 telescopes (Skynet "
+            "Simulator — Optical, Karoo, Skynet Simulator — Optical, Outback), with "
+            "an estimated 15.5–20 s of exposure in 6 exposures. Not observable in "
+            "the window: Skynet Simulator — Optical, Atacama."
+        ) in page
+        assert len(skynet_api.sent("POST", "/v1/observation-specs:validate")) == 1
         assert not skynet_api.sent(*PUBLISH)
         assert not ObservationRecord.objects.exists()
+
+    def test_validate_shows_skynets_field_errors(
+        self, client, ada, target, skynet_api, create_url
+    ):
+        skynet_api.validate = (422, load("dry_run/validate_error.json"))
+        client.force_login(ada)
+        values = form_data(target, validate="Validate")
+        del values["submit"]
+        response = client.post(create_url, values)
+        assert (
+            "Target SNR: Input should be a valid number, unable to parse string as "
+            "a number"
+        ) in response.content.decode()
+        assert not skynet_api.sent("POST", "/v1/observation-specs:plan")
+
+    def test_submit_refuses_what_no_telescope_can_carry_out(
+        self, client, ada, target, skynet_api, create_url
+    ):
+        skynet_api.incompatible = {105, 106, 107}
+        client.force_login(ada)
+        response = client.post(create_url, form_data(target))
+        assert response.status_code == 200
+        assert (
+            "no telescope on this time account can carry it out: No optical_imaging "
+            "request matches the instrument&#x27;s capabilities."
+        ) in response.content.decode()
+        assert not skynet_api.sent(*PUBLISH)
+
+    def test_submit_refuses_what_no_telescope_can_observe(
+        self, client, ada, target, skynet_api, create_url
+    ):
+        skynet_api.unobservable = {105, 106, 107}
+        client.force_login(ada)
+        response = client.post(create_url, form_data(target))
+        assert "can observe it in the window" in response.content.decode()
+        assert not skynet_api.sent(*PUBLISH)
+
+    def test_a_window_checked_only_in_part_is_submitted(
+        self, client, ada, target, skynet_api, create_url
+    ):
+        skynet_api.unobservable = {105, 106, 107}
+        client.force_login(ada)
+        response = client.post(create_url, form_data(target, end="2026-12-01T00:00"))
+        assert response.status_code == 302
+        assert len(skynet_api.sent(*PUBLISH)) == 1
 
     def test_a_refusal_reaches_the_form(
         self, client, ada, target, skynet_api, create_url
@@ -158,6 +211,34 @@ class TestSubmit:
         ]
         with pytest.raises(SkynetSubmitError, match="from 1.0 to 10.0"):
             facility.submit_observation(payload)
+        assert not skynet_api.sent(*PUBLISH)
+
+
+class TestWithoutAUser:
+    def test_a_payload_without_a_user_is_refused_clearly(self, ada, target, skynet_api):
+        payload = {"target_id": target.pk, "params": form_data(target)}
+        with pytest.raises(SkynetSubmitError, match="need a TOM user"):
+            SkynetFacility().submit_observation(payload)
+        assert skynet_api.requests == []
+
+    def test_the_rest_api_is_refused_clearly(self, ada, target, skynet_api):
+        from rest_framework.test import APIClient
+
+        assign_perm("tom_targets.view_target", ada, target)
+        api = APIClient()
+        api.force_authenticate(ada)
+        response = api.post(
+            "/api/observations/",
+            {
+                "facility": "Skynet",
+                "target_id": target.pk,
+                "observation_type": "IMAGING",
+                "observing_parameters": form_data(target),
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "need a TOM user" in response.content.decode()
         assert not skynet_api.sent(*PUBLISH)
 
 

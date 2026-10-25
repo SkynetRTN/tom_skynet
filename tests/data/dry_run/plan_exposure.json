@@ -1,0 +1,26 @@
+{
+  "constraints": [],
+  "opticalImagingConfigurationPlan": {
+    "dither": [],
+    "positionAngleDeg": 0.0,
+    "selectedFiltersByRequest": {
+      "5": [
+        {
+          "bandpassNm": null,
+          "centralWavelengthNm": null,
+          "filterSpecifierType": "filter",
+          "flatExposureScaler": null,
+          "flatExposureSunElevationCoeffPerDeg": null,
+          "id": "lum",
+          "isModifier": false,
+          "throughputFraction": null
+        }
+      ]
+    },
+    "tiles": [],
+    "totalExposureTimeSec": 600.0,
+    "totalExposures": 1,
+    "xFov": 0.6078745282941177,
+    "yFov": 0.40524968552941176
+  }
+}

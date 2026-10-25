@@ -1,3 +1,4 @@
+import copy
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -28,6 +29,17 @@ class SkynetAPI:
         self.unsigned: set[str] = set()
         #: The answer to a cancel; a 2xx marks the observation canceled
         self.cancel_status = 200
+        #: The answer to :validate
+        self.validate: tuple[int, dict] = (200, {})
+        #: Instruments the preview finds incompatible, or with no observable window
+        self.incompatible: set[int] = set()
+        self.unobservable: set[int] = set()
+        #: (total exposures, total exposure time) per instrument
+        self.plans: dict[int, tuple[int, float]] = {
+            105: (6, 12.0),
+            106: (6, 15.5),
+            107: (6, 20.0),
+        }
 
     def sent(self, method: str, path: str) -> list[httpx.Request]:
         return [r for r in self.requests if r.method == method and r.url.path == path]
@@ -40,6 +52,33 @@ class SkynetAPI:
         if path == "/v1/observation-specs:publish":
             status, body = self.publish
             return httpx.Response(status, json=body)
+        if path == "/v1/observation-specs:validate":
+            status, body = self.validate
+            return httpx.Response(status, json=body)
+        if path == "/v1/observation-specs:compatible-instruments":
+            ok = load("dry_run/compatible_instruments.json")["results"][0]
+            refused = load("dry_run/compatible_instruments_incompatible.json")
+            refused = refused["results"][0]
+            results = [
+                {**(refused if i in self.incompatible else ok), "instrumentId": i}
+                for i in json.loads(request.content)["instrumentIds"]
+            ]
+            return httpx.Response(200, json={"results": results})
+        if path == "/v1/observation-specs:observability":
+            # The recorded windows are all unobservable; open one
+            instrument_id = json.loads(request.content)["instrumentId"]
+            body = load("dry_run/observability.json")
+            if instrument_id not in self.unobservable:
+                body["windows"][0] |= {"observable": True, "reason": None}
+            return httpx.Response(200, json=body)
+        if path == "/v1/observation-specs:plan":
+            count, seconds = self.plans[json.loads(request.content)["instrumentId"]]
+            body = copy.deepcopy(load("dry_run/plan.json"))
+            body["opticalImagingConfigurationPlan"] |= {
+                "totalExposures": count,
+                "totalExposureTimeSec": seconds,
+            }
+            return httpx.Response(200, json=body)
         if path == "/v1/files/data/presign":
             ids = json.loads(request.content)["fileIds"]
             items = [

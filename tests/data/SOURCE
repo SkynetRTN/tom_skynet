@@ -1,4 +1,5 @@
 Copied from SkynetRTN/AEONlib tests/skynet/data/ (branch skynet, commit
-2a02b4f), which copies them from SkynetRTN/skynet
+e905832), which copies them from SkynetRTN/skynet
 apps/public-api/tests/contract/aeonplus/fixtures/: instrument_pools.json,
-publish_snr.json, presign.json, progress_products.json and progress/<STATE>.json.
+publish_snr.json, publish_exposure.json, publish_cadence.json, presign.json,
+progress_products.json, progress/<STATE>.json and dry_run/*.json.

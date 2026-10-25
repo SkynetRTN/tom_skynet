@@ -70,8 +70,8 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
     def validate_observation(self, observation_payload):
         """
-        Check the request against the user's time accounts, without submitting.
-        Skynet has no dry run yet.
+        Check the request with Skynet as self.user, without submitting: the
+        form's checks, then Skynet's. Messages for the fields, then the rest.
         """
         form = self._form(observation_payload, submit=False)
         form.is_valid()

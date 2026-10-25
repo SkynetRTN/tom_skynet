@@ -1,0 +1,16 @@
+{
+  "detail": [
+    {
+      "input": "high",
+      "loc": [
+        "requests",
+        0,
+        "optical_imaging",
+        "targetSnr"
+      ],
+      "msg": "Input should be a valid number, unable to parse string as a number",
+      "type": "float_parsing",
+      "url": "https://errors.pydantic.dev/2.12/v/float_parsing"
+    }
+  ]
+}
