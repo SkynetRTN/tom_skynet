@@ -1,3 +1,4 @@
+import json
 import logging
 
 import requests
@@ -7,6 +8,7 @@ from django import forms
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db.models import Q
+from tom_dataproducts import models as dataproduct_models
 from tom_dataproducts.models import DataProduct
 from tom_observations.facility import BaseRoboticObservationFacility
 from tom_observations.models import ObservationRecord
@@ -23,6 +25,9 @@ logger = logging.getLogger(__name__)
 PRODUCT_PREFIX = "skynet:"
 
 DOWNLOAD_TIMEOUT_SEC = 120
+
+# TOM Toolkit's data product type for FITS images, when the TOM defines it
+FITS_FILE = "fits_file"
 
 
 class SkynetSubmitError(Exception):
@@ -88,7 +93,9 @@ class SkynetFacility(BaseRoboticObservationFacility):
         return ["WINDOW_EXPIRED"]
 
     def get_observing_sites(self):
-        return {}
+        """FACILITIES["SKYNET"]["sites"], in TOM Toolkit's format; none by default"""
+        facility = getattr(settings, "FACILITIES", {}).get("SKYNET", {})
+        return facility.get("sites", {})
 
     def cancel_observation(self, observation_id):
         """
@@ -150,11 +157,9 @@ class SkynetFacility(BaseRoboticObservationFacility):
             record.scheduled_end = progress.scheduled_end
             record.save()
             if _unsaved_final_products(progress):
-                self.save_data_products(record)
+                self.save_data_products(record, progress=progress)
             # Finished only once every final product the progress lists is
-            # saved. A save can return without error and still miss some: the
-            # presign endpoint can leave a file out (on a signing error, say),
-            # and AEONlib then returns that product without a URL.
+            # saved: Skynet may not presign some (they come without a URL)
             missing = _unsaved_final_products(progress)
             if missing:
                 logger.warning(
@@ -209,18 +214,20 @@ class SkynetFacility(BaseRoboticObservationFacility):
             saved = DataProduct.objects.filter(observation_record=observation_record)
             return {"saved": list(saved), "unsaved": []}
 
-    def save_data_products(self, observation_record, product_id=None):
+    def save_data_products(self, observation_record, product_id=None, progress=None):
         """
         Download and save the final products not saved yet. Unlike the base
         class, the DataProduct is only written once its file has downloaded, so
         a failed download (an expired URL, Skynet's storage unreachable) leaves
-        nothing behind and is retried on the next poll.
+        nothing behind and is retried on the next poll. Pass a progress already
+        read to save reading it again.
         """
         from tom_dataproducts.utils import create_image_dataproduct
 
         saved = []
+        telescopes = None
         for product in self.data_products(
-            observation_record.observation_id, product_id
+            observation_record.observation_id, product_id, progress=progress
         ):
             existing = DataProduct.objects.filter(product_id=product["id"]).first()
             if existing is not None and existing.data:
@@ -236,6 +243,12 @@ class SkynetFacility(BaseRoboticObservationFacility):
                 target=observation_record.target,
                 observation_record=observation_record,
             )
+            if telescopes is None:
+                telescopes = _telescopes(observation_record.observation_id)
+            data_product.data_product_type = _fits_type()
+            data_product.extra_data = json.dumps(
+                _metadata(product["skynet"], telescopes)
+            )
             data_product.data.save(product["filename"], ContentFile(response.content))
             logger.info("Saved Skynet data product %s", data_product.data)
             if getattr(settings, "AUTO_THUMBNAILS", False):
@@ -244,17 +257,22 @@ class SkynetFacility(BaseRoboticObservationFacility):
             saved.append(data_product)
         return saved
 
-    def data_products(self, observation_id, product_id=None):
-        """The final science files, with presigned URLs; a re-processed frame is a new file"""
+    def data_products(self, observation_id, product_id=None, progress=None):
+        """
+        The final science files, with presigned URLs; a re-processed frame is a
+        new file. "data" is the URL too, which the record page links.
+        """
         skynet = facility_for_observation(observation_id)
         products = [
             {
                 "id": PRODUCT_PREFIX + product.file_id,
                 "filename": product.filename,
                 "url": product.url,
+                "data": product.url,
                 "created": product.taken_at_start_utc,
+                "skynet": product,
             }
-            for product in skynet.data_products(observation_id)
+            for product in skynet.data_products(observation_id, progress=progress)
         ]
         if product_id is not None:
             products = [p for p in products if p["id"] == product_id]
@@ -269,3 +287,50 @@ def _unsaved_final_products(progress: ObservationProgress) -> set[str]:
         .values_list("product_id", flat=True)
     )
     return final - set(saved)
+
+
+def _fits_type() -> str:
+    """fits_file when the TOM's DATA_PRODUCT_TYPES has it, else no type"""
+    types = {name for name, _ in dataproduct_models.DATA_TYPE_CHOICES}
+    if FITS_FILE in types:
+        return FITS_FILE
+    logger.warning(
+        "DATA_PRODUCT_TYPES has no %r; Skynet products are saved without a type",
+        FITS_FILE,
+    )
+    return ""
+
+
+def _telescopes(observation_id) -> dict:
+    """The record owner's telescopes by id, or nothing when the pools can't be read"""
+    try:
+        pools = facility_for_observation(observation_id).instrument_pools()
+    except (
+        SkynetCredentialsError,
+        AuthenticationError,
+        ServiceNetworkError,
+        SkynetError,
+    ):
+        return {}
+    return pools.telescopes
+
+
+def _metadata(product, telescopes: dict) -> dict:
+    """The D9 metadata saved in DataProduct.extra_data, units in the names"""
+    telescope = telescopes.get(product.telescope_id)
+    metadata = {
+        "skynet_file_id": product.file_id,
+        "is_reduced": product.is_reduced,
+        "telescope_id": product.telescope_id,
+        "telescope_name": telescope.name if telescope else None,
+        "telescope_slug": telescope.slug if telescope else None,
+        "instrument_id": product.instrument_id,
+        "filter_id": product.filter_id,
+        "exposure_time_sec": product.exposure_time_sec,
+        "taken_at_start_utc": product.taken_at_start_utc.isoformat()
+        if product.taken_at_start_utc
+        else None,
+        "airmass": product.airmass,
+        "pixel_scale_arcsec_per_px": product.pixel_scale_arcsec_per_px,
+    }
+    return {key: value for key, value in metadata.items() if value is not None}

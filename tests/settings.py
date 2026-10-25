@@ -38,3 +38,9 @@ MATCH_MANAGERS = {}
 TARGET_PERMISSIONS_ONLY = True
 TARGET_DEFAULT_PERMISSION = "PRIVATE"
 AUTH_STRATEGY = "READ_ONLY"
+DATA_PRODUCT_TYPES = {
+    "photometry": ("photometry", "Photometry"),
+    "fits_file": ("fits_file", "FITS File"),
+    "spectroscopy": ("spectroscopy", "Spectroscopy"),
+    "image_file": ("image_file", "Image File"),
+}

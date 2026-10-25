@@ -295,7 +295,7 @@ class TestStatus:
             return len(skynet_api.sent("GET", "/v1/observations/317/progress")) - before
 
         skynet_api.progress["317"] = products(state="completed")
-        assert polls() == 2  # the state, then the products to save
+        assert polls() == 1  # one read for the state and the products to save
         polled.refresh_from_db()
         assert polled.status == "COMPLETED"
         assert DataProduct.objects.count() == 1
@@ -534,6 +534,71 @@ class TestDataProducts:
         response = client.get(reverse("tom_observations:detail", args=[page.pk]))
         assert response.status_code == 200
         assert response.context["data_products"] == {"saved": [], "unsaved": []}
+
+
+class TestProductMetadata:
+    def test_a_saved_product_is_a_fits_file_with_its_metadata(
+        self, ada, target, skynet_api
+    ):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        # The products' telescope (recorded elsewhere) among the owner's pools
+        expected = load("progress_products.json")["products"][0]
+        telescope = skynet_api.pools["telescopes"]["105"] | {
+            "id": expected["telescopeId"]
+        }
+        skynet_api.pools["telescopes"][str(expected["telescopeId"])] = telescope
+        SkynetFacility().update_observation_status("317")
+        (saved,) = DataProduct.objects.all()
+        assert saved.data_product_type == "fits_file"
+        metadata = json.loads(saved.extra_data)
+        assert metadata["skynet_file_id"] == FILE_ID
+        assert metadata["filter_id"] == expected["filterId"]
+        assert metadata["telescope_id"] == expected["telescopeId"]
+        assert metadata["is_reduced"] is True
+        assert metadata["telescope_slug"] == "sim-optical-atacama"
+
+    def test_a_telescope_the_pools_dont_list_is_left_out(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        SkynetFacility().update_observation_status("317")
+        metadata = json.loads(DataProduct.objects.get().extra_data)
+        assert "telescope_slug" not in metadata and metadata["telescope_id"]
+
+    def test_no_type_when_the_tom_lacks_fits_file(
+        self, ada, target, skynet_api, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "tom_dataproducts.models.DATA_TYPE_CHOICES",
+            (("photometry", "Photometry"),),
+        )
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        SkynetFacility().update_observation_status("317")
+        assert DataProduct.objects.get().data_product_type == ""
+
+    def test_unsaved_products_link_their_url(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        (offered,) = SkynetFacility().data_products("317")
+        assert offered["data"] == offered["url"] == f"https://minio.invalid/{FILE_ID}"
+
+
+class TestSites:
+    def test_none_by_default(self, skynet_api):
+        assert SkynetFacility().get_observing_sites() == {}
+
+    def test_from_the_settings(self, settings):
+        sites = {
+            "Karoo": {
+                "sitecode": "sim-optical-karoo",
+                "latitude": -31.3,
+                "longitude": 21.8,
+                "elevation": 1300,
+            }
+        }
+        settings.FACILITIES = {"SKYNET": {"sites": sites}}
+        assert SkynetFacility().get_observing_sites() == sites
 
 
 def test_the_observation_link_needs_no_token(skynet_api):
