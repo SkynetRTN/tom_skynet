@@ -1,0 +1,26 @@
+<div class="card mb-3">
+  <h5 class="card-header">Skynet</h5>
+  <div class="card-body">
+    {% if has_token %}
+      <p>
+        <span class="badge bg-success">API token set</span>
+        {% if updated_at %}<span class="text-muted">on {{ updated_at|date:"Y-m-d H:i" }}</span>{% endif %}
+      </p>
+      {% if problem %}
+        <div class="alert alert-warning">{{ problem }}</div>
+      {% elif accounts %}
+        <p class="mb-1">Time accounts you can use from this TOM:</p>
+        <ul>{% for account in accounts %}<li>{{ account }}</li>{% endfor %}</ul>
+      {% else %}
+        <p>None of your Skynet time accounts can be used from this TOM.</p>
+      {% endif %}
+      <a href="{% url 'tom_skynet:token' %}" class="btn btn-outline-primary btn-sm">Change Skynet API token</a>
+    {% else %}
+      <p>
+        <span class="badge bg-warning text-dark">No API token</span>
+        Set one to request Skynet observations.
+      </p>
+      <a href="{% url 'tom_skynet:token' %}" class="btn btn-primary btn-sm">Set Skynet API token</a>
+    {% endif %}
+  </div>
+</div>

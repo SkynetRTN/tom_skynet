@@ -29,6 +29,8 @@ class SkynetAPI:
         self.unsigned: set[str] = set()
         #: The answer to a cancel; a 2xx marks the observation canceled
         self.cancel_status = 200
+        #: Tokens Skynet answers with a 401
+        self.rejected_tokens: set[str] = set()
         #: The answer to :validate
         self.validate: tuple[int, dict] = (200, {})
         #: Instruments the preview finds incompatible, or with no observable window
@@ -47,6 +49,9 @@ class SkynetAPI:
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
         path = request.url.path
+        token = request.headers.get("Authorization", "").removeprefix("Bearer ")
+        if token in self.rejected_tokens:
+            return httpx.Response(401, json={"detail": "Invalid token"})
         if path == "/v1/me/observing-access/instrument-pools":
             return httpx.Response(200, json=self.pools)
         if path == "/v1/observation-specs:publish":

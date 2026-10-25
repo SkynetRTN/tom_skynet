@@ -1,0 +1,17 @@
+{% extends 'tom_common/base.html' %}
+{% load django_bootstrap5 %}
+{% block title %}Skynet API token{% endblock %}
+{% block content %}
+<h3>Skynet API token</h3>
+<p>
+  Requests you submit from this TOM go to Skynet as you, with this token, and
+  spend your own time accounts.
+</p>
+<form method="post">
+  {% csrf_token %}
+  {% bootstrap_form form %}
+  <button type="submit" name="save" class="btn btn-primary">Save</button>
+  <button type="submit" name="clear" class="btn btn-outline-danger" formnovalidate>Remove token</button>
+  <a href="{% url 'user-profile' %}" class="btn btn-outline-secondary">Back</a>
+</form>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.urls import include, path
 
 
 class TomSkynetConfig(AppConfig):
@@ -10,3 +11,14 @@ class TomSkynetConfig(AppConfig):
 
     def observation_facilities(self):
         return [{"class": f"{self.name}.facility.SkynetFacility"}]
+
+    def profile_details(self):
+        return [
+            {
+                "partial": "tom_skynet/partials/skynet_profile.html",
+                "context": f"{self.name}.profile.profile_card",
+            }
+        ]
+
+    def include_url_paths(self):
+        return [path("skynet/", include(f"{self.name}.urls"))]

@@ -16,6 +16,7 @@ from aeonlib.skynet import (
 from crispy_forms.layout import HTML, Column, Fieldset, Layout, Row
 from django import forms
 from django.core.exceptions import NON_FIELD_ERRORS
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
 from pydantic import ValidationError
@@ -171,6 +172,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
         self.skynet = None
         self.pools: InstrumentPools | None = None
         self.unavailable = ""
+        self.needs_token = False
         self.skynet_request: SkynetImagingRequest | None = None
         self.submitted: SubmittedObservation | None = None
         self.previews: list[InstrumentPreview] | None = None
@@ -200,6 +202,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             self.pools = self.skynet.instrument_pools()
         except SkynetCredentialsError as exc:
             self.unavailable = f"{exc}. Set your Skynet API token first."
+            self.needs_token = True
             return
         except (AuthenticationError, ServiceNetworkError, SkynetError) as exc:
             self.unavailable = f"Skynet is unavailable: {error_message(exc)}"
@@ -229,8 +232,15 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             Row(*(Column(name) for name in _row_fields(row)))
             for row in range(1, FILTER_ROWS + 1)
         ]
+        link = (
+            f' <a href="{reverse("tom_skynet:token")}">Set your Skynet API token</a>'
+            if self.needs_token
+            else ""
+        )
         alert = (
-            HTML(f'<div class="alert alert-warning">{escape(self.unavailable)}</div>')
+            HTML(
+                f'<div class="alert alert-warning">{escape(self.unavailable)}{link}</div>'
+            )
             if self.unavailable
             else HTML("")
         )
