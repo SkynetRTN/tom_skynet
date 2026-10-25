@@ -134,7 +134,8 @@ or in Django admin, under Skynet profiles.
 - A reopened Skynet observation: once a record is terminal, the TOM stops
   following it.
 - Thumbnails: TOM Toolkit only makes them for FITS files with a `SCI`
-  extension, and Skynet's images are in the primary HDU.
+  extension, and Skynet's images are tile-compressed extensions with no
+  `EXTNAME`.
 
 ## Development
 
