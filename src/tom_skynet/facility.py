@@ -110,14 +110,15 @@ class SkynetFacility(BaseRoboticObservationFacility):
             .first()
         )
         # TOM Toolkit's cancel view only requires a login, and the cancel goes
-        # out with the owner's token
+        # out with the owner's token. Its REST cancel names no user at all, so
+        # it can't be checked and is refused.
         user = self.user
-        if (
-            record is not None
-            and user is not None
-            and user != record.user
-            and not user.is_superuser
-        ):
+        if user is None:
+            raise forms.ValidationError(
+                "Cancel Skynet observations from their observation page: the REST "
+                "API doesn't say who is cancelling"
+            )
+        if record is not None and user != record.user and not user.is_superuser:
             raise forms.ValidationError(
                 "Only the TOM user who submitted it can cancel a Skynet observation"
             )
@@ -268,7 +269,8 @@ class SkynetFacility(BaseRoboticObservationFacility):
                 "id": PRODUCT_PREFIX + product.file_id,
                 "filename": product.filename,
                 "url": product.url,
-                "data": product.url,
+                # The record page links it; Skynet may not have presigned it
+                "data": product.url or "",
                 "created": product.taken_at_start_utc,
                 "skynet": product,
             }

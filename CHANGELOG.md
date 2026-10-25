@@ -12,7 +12,7 @@
   exposure time. Submit refuses a request no telescope can carry out or
   observe in its window.
 - Requests without a TOM user (the REST API, cadence strategies) are refused
-  with a message.
+  with a message, and so is the REST cancel.
 - Static observing sites for the visibility plot (`FACILITIES["SKYNET"]["sites"]`).
 - Data products are saved as `fits_file` with Skynet's metadata in
   `extra_data`; unsaved products link to their files; a poll reads Skynet's

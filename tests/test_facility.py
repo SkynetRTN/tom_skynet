@@ -361,7 +361,9 @@ class TestCancel:
     def test_a_terminal_observation_is_left_alone(self, ada, target, skynet_api):
         record(ada, target, status="COMPLETED")
         skynet_api.progress["317"] = products(state="completed")
-        assert SkynetFacility().cancel_observation("317") is True
+        facility = SkynetFacility()
+        facility.set_user(ada)
+        assert facility.cancel_observation("317") is True
         assert not skynet_api.sent(*self.PATCH)
 
     def test_a_refusal_reaches_the_page(self, client, ada, target, skynet_api):
@@ -393,19 +395,20 @@ class TestCancel:
         ).content.decode()
         assert ("Cancel Observation" in page) is offered
 
-    def test_the_rest_api_cancels_as_the_owner(self, ada, target, skynet_api):
+    def test_the_rest_api_cancel_is_refused(self, ada, target, skynet_api):
+        # It names no user, so it can't tell the owner from anyone who can see
+        # the target
         from rest_framework.test import APIClient
 
         pending = record(ada, target, status="PENDING")
-        assign_perm("tom_observations.view_observationrecord", ada, pending)
-        assign_perm("tom_observations.change_observationrecord", ada, pending)
+        assign_perm("tom_targets.view_target", ada, target)
         skynet_api.progress["317"] = progress("PENDING", id=317)
         api = APIClient()
         api.force_authenticate(ada)
         response = api.patch(f"/api/observations/{pending.pk}/cancel/")
-        assert response.status_code == 200, response.content
-        assert response.json()["status"] == "CANCELED"
-        assert len(skynet_api.sent(*self.PATCH)) == 1
+        assert response.status_code == 400
+        assert "observation page" in response.content.decode()
+        assert not skynet_api.sent(*self.PATCH)
 
 
 class TestDataProducts:
@@ -595,6 +598,13 @@ class TestProductMetadata:
         skynet_api.progress["317"] = products()
         SkynetFacility().update_observation_status("317")
         assert DataProduct.objects.get().data_product_type == ""
+
+    def test_an_unsigned_product_has_no_link(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        skynet_api.unsigned = {FILE_ID}
+        (offered,) = SkynetFacility().data_products("317")
+        assert offered["url"] is None and offered["data"] == ""
 
     def test_unsaved_products_link_their_url(self, ada, target, skynet_api):
         record(ada, target)

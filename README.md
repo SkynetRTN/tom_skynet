@@ -108,7 +108,9 @@ or in Django admin, under Skynet profiles.
   staff). Frames already taken are kept, so a cancel can end as
   `PARTIALLY_COMPLETED`. TOM Toolkit shows Cancel only while a record is
   `PENDING`; to offer it until a Skynet record is terminal, add the package's
-  template override to your settings:
+  template override to your settings (TOM Toolkit's cancel link is a plain
+  GET, so as with any facility a page that loads it while the owner is logged
+  in cancels the observation):
 
   ```python
   import tom_skynet
@@ -125,7 +127,9 @@ or in Django admin, under Skynet profiles.
 
 - **TOM Toolkit's REST API and cadence strategies** build the request form
   without a TOM user, so there is no token to use; they are refused with a
-  message. Use Skynet's own epochs for repeated observations.
+  message. Use Skynet's own epochs for repeated observations. The REST cancel
+  (`PATCH /api/observations/<pk>/cancel/`) is refused too: it doesn't say who
+  is cancelling, and the cancel would go out with the owner's token.
 - Non-sidereal targets, and choosing a telescope or site.
 - A reopened Skynet observation: once a record is terminal, the TOM stops
   following it.

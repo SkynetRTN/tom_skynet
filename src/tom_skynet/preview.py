@@ -10,7 +10,12 @@ def _name(preview: InstrumentPreview) -> str:
 
 
 def _names(previews: list[InstrumentPreview]) -> str:
-    return ", ".join(sorted(_name(p) for p in previews))
+    """The telescopes, once each: a telescope can have several instruments"""
+    return ", ".join(sorted({_name(p) for p in previews}))
+
+
+def _telescopes(previews: list[InstrumentPreview]) -> int:
+    return len({_name(p) for p in previews})
 
 
 def _span(low: float, high: float, unit: str = "") -> str:
@@ -52,12 +57,23 @@ def preview_summary(
     """The Validate message: which telescopes can carry out the request, and the estimate"""
     compatible = [p for p in previews if p.compatible]
     usable = [p for p in compatible if p.observable]
-    unobservable = [p for p in compatible if not p.observable]
-    incompatible = [p for p in previews if not p.compatible]
+    # A telescope counts as usable when any of its instruments is
+    usable_names = {_name(p) for p in usable}
+    unobservable = [
+        p for p in compatible if not p.observable and _name(p) not in usable_names
+    ]
+    incompatible = [
+        p
+        for p in previews
+        if not p.compatible and _name(p) not in {_name(c) for c in compatible}
+    ]
     parts = ["Skynet accepts this request."]
     plans = [p.plan for p in usable if p.plan is not None]
     if usable:
-        sentence = f"It can run on {len(usable)} of {len(previews)} telescopes ({_names(usable)})"
+        sentence = (
+            f"It can run on {_telescopes(usable)} of {_telescopes(previews)} "
+            f"telescopes ({_names(usable)})"
+        )
         if plans:
             times = [plan.total_exposure_time for plan in plans]
             counts = [plan.total_exposures for plan in plans]
