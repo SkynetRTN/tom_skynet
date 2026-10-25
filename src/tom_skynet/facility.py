@@ -113,7 +113,7 @@ class SkynetFacility(BaseRoboticObservationFacility):
             # Finished only once every final product the progress lists is
             # saved. A save can return without error and still miss some: the
             # presign endpoint can leave a file out (on a signing error, say),
-            # and AEONlib then drops that product rather than raising.
+            # and AEONlib then returns that product without a URL.
             missing = _unsaved_final_products(progress)
             if missing:
                 logger.warning(
@@ -184,6 +184,9 @@ class SkynetFacility(BaseRoboticObservationFacility):
             existing = DataProduct.objects.filter(product_id=product["id"]).first()
             if existing is not None and existing.data:
                 saved.append(existing)
+                continue
+            if product["url"] is None:
+                # Skynet didn't presign it this time; the next poll asks again
                 continue
             response = requests.get(product["url"], timeout=DOWNLOAD_TIMEOUT_SEC)
             response.raise_for_status()

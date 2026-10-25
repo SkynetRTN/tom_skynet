@@ -11,7 +11,7 @@ dependencies = [
     "tomtoolkit>=3.1,<4",
     # AEONlib's Skynet facility isn't released yet: pinned to the
     # SkynetRTN/AEONlib fork's `skynet` branch until it is.
-    "aeonlib @ git+https://github.com/SkynetRTN/AEONlib@2a02b4f559ab952f8a3352fb69cbb315a0311f3d",
+    "aeonlib @ git+https://github.com/SkynetRTN/AEONlib@e905832cccfce3f0054e23249e8827235080d80e",
 ]
 
 [project.urls]
