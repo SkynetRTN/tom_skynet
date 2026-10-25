@@ -15,10 +15,10 @@ Work in progress: sidereal imaging only. See [What isn't supported](#what-isnt-s
 ## Install
 
 `tom_skynet` needs Python 3.12 or 3.13 and TOM Toolkit 3.1. It isn't on PyPI
-yet; install it from git, pinned to a commit:
+yet; install it from git, at a release tag:
 
 ```bash
-pip install "tom-skynet @ git+https://github.com/SkynetRTN/tom_skynet@<commit>"
+pip install "tom-skynet @ git+https://github.com/SkynetRTN/tom_skynet@v0.2.0"
 ```
 
 Add it to your TOM's `settings.py` and migrate:

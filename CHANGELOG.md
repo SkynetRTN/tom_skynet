@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-10-25)
 
 - Cancel an observation from the record page, by the user who submitted it or
   staff; an opt-in template (`tom_skynet.TEMPLATE_OVERRIDES`) offers Cancel
