@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Cancel an observation from the record page, by the user who submitted it or
-  staff.
+  staff; an opt-in template (`tom_skynet.TEMPLATE_OVERRIDES`) offers Cancel
+  until a Skynet record is terminal.
 - Request by total exposure time as well as target SNR; extinction, Moon
   separation, and epochs repeated at a period.
 - Validate checks the request with Skynet and previews the telescopes: which

@@ -106,7 +106,15 @@ or in Django admin, under Skynet profiles.
   are taken.
 - **Cancel:** the observation page's Cancel, by the user who submitted it (or
   staff). Frames already taken are kept, so a cancel can end as
-  `PARTIALLY_COMPLETED`.
+  `PARTIALLY_COMPLETED`. TOM Toolkit shows Cancel only while a record is
+  `PENDING`; to offer it until a Skynet record is terminal, add the package's
+  template override to your settings:
+
+  ```python
+  import tom_skynet
+
+  TEMPLATES[0]["DIRS"].append(tom_skynet.TEMPLATE_OVERRIDES)
+  ```
 - **Data:** polling saves each final science file as a `fits_file` data
   product, with the id `skynet:<file id>` and Skynet's metadata (telescope,
   filter, exposure, time, airmass, pixel scale) in `extra_data`. A frame that

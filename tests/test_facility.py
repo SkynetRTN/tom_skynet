@@ -374,6 +374,25 @@ class TestCancel:
             in response.content.decode()
         )
 
+    @pytest.mark.parametrize(("override", "offered"), [(False, False), (True, True)])
+    def test_a_scheduled_record_offers_cancel_with_the_override(
+        self, client, ada, target, skynet_api, settings, override, offered
+    ):
+        import tom_skynet
+
+        if override:
+            settings.TEMPLATES = [
+                settings.TEMPLATES[0] | {"DIRS": [tom_skynet.TEMPLATE_OVERRIDES]}
+            ]
+        scheduled = record(ada, target, status="SCHEDULED")
+        assign_perm("tom_targets.view_target", ada, target)
+        skynet_api.progress["317"] = progress("SCHEDULED", id=317)
+        client.force_login(ada)
+        page = client.get(
+            reverse("tom_observations:detail", kwargs={"pk": scheduled.pk})
+        ).content.decode()
+        assert ("Cancel Observation" in page) is offered
+
     def test_the_rest_api_cancels_as_the_owner(self, ada, target, skynet_api):
         from rest_framework.test import APIClient
 
