@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 (2026-10-26)
+
+- Thumbnails for Skynet's frames, drawn when a product is saved: TOM Toolkit
+  draws none for tile-compressed images with no `SCI` extension. The
+  `skynet_thumbnails` command draws them for products saved before.
+
 ## 0.2.0 (2026-10-25)
 
 - Cancel an observation from the record page, by the user who submitted it or
