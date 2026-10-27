@@ -719,8 +719,10 @@ class TestLostAccess:
         ]
         assign_perm("tom_targets.view_target", ada, target)
         client.force_login(ada)
+        polls = len(skynet_api.requests)
         page = client.get(reverse("tom_observations:detail", args=[lost.pk]))
         assert "no longer lets this record" in page.content.decode()
+        assert len(skynet_api.requests) == polls  # nor asks Skynet for products
 
     def test_other_errors_still_fail_the_poll(self, ada, target, skynet_api):
         record(ada, target)

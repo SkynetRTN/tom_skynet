@@ -79,8 +79,10 @@ would make the request someone else's. The record page's parameters name the
 owner (`skynet_owner`). Which telescopes an account reaches is up to Skynet,
 through its grants.
 
-If the owner of a record later can't read its observation (they left the
-organization, say; Skynet answers 404), the TOM stops polling it and the
+The TOM user is the observation's creator, and Skynet keeps a creator's
+access to it even after they lose the grant or leave the organization. If a
+record's owner can still no longer read it (Skynet answers 404: their token
+now belongs to another Skynet user, say), the TOM stops polling it and the
 record page says so. The products already saved stay.
 
 ## Skynet API tokens

@@ -220,6 +220,11 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
     def all_data_products(self, observation_record):
         """The record page's products; only the saved ones when Skynet can't be read"""
+        saved = DataProduct.objects.filter(observation_record=observation_record)
+        if SkynetRecordState.objects.filter(
+            record=observation_record, access_lost=True
+        ).exists():
+            return {"saved": list(saved), "unsaved": []}
         try:
             return super().all_data_products(observation_record)
         except (
@@ -231,7 +236,6 @@ class SkynetFacility(BaseRoboticObservationFacility):
             logger.warning(
                 "Skynet observation %s: %s", observation_record.observation_id, exc
             )
-            saved = DataProduct.objects.filter(observation_record=observation_record)
             return {"saved": list(saved), "unsaved": []}
 
     def save_data_products(self, observation_record, product_id=None, progress=None):

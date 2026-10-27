@@ -32,8 +32,8 @@ by adding tom_skynet.TEMPLATE_OVERRIDES to TEMPLATES DIRS.
       </p>
       {% if object.skynet_state.access_lost %}
         <div class="alert alert-warning mt-2">
-          Skynet no longer lets this record's owner read the observation (for example,
-          they left the organization that owns its time account), so it isn't updated
+          Skynet no longer lets this record's owner read the observation (their Skynet
+          API token now belongs to a different Skynet user, say), so it isn't updated
           any more. Products already saved stay here.
         </div>
       {% endif %}
