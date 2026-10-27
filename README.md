@@ -52,7 +52,6 @@ FACILITIES = {
     "SKYNET": {
         "api_root": "https://api.skynetgo.org/",
         "web_root": "https://skynetgo.org/",
-        "allowed_telescope_prefix": "",
         "sites": {},
     },
 }
@@ -62,9 +61,27 @@ FACILITIES = {
 |---|---|---|
 | `api_root` | `https://api.skynetgo.org/` | Skynet API |
 | `web_root` | `https://skynetgo.org/` | Skynet website, for observation links |
-| `allowed_telescope_prefix` | empty | Offer only time accounts whose telescopes all start with it (`sim-` keeps a test TOM on Skynet's simulators); empty offers every account |
 | `sites` | none | Sites for TOM Toolkit's visibility plot, in its format: `{"Name": {"sitecode": ..., "latitude": ..., "longitude": ..., "elevation": ...}}`. Static, because the plot is drawn without a user |
 | `api_token` | none | A token for users who have none of their own. Leave it unset when each user has a token |
+
+## Time accounts
+
+An observation belongs to the owner of the time account that funds it, and so
+do its data: that's the owner Skynet records when the TOM submits it. So the
+form offers:
+
+- the accounts the user owns, labelled "yours";
+- organizations' accounts the user holds a grant on, labelled with the
+  organization;
+
+and never another user's personal account, even with a grant on it, which
+would make the request someone else's. The record page's parameters name the
+owner (`skynet_owner`). Which telescopes an account reaches is up to Skynet,
+through its grants.
+
+If the owner of a record later can't read its observation (they left the
+organization, say; Skynet answers 404), the TOM stops polling it and the
+record page says so. The products already saved stay.
 
 ## Skynet API tokens
 

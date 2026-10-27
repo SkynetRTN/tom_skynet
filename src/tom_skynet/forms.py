@@ -25,7 +25,7 @@ from tom_targets.models import Target
 
 from .client import error_message, facility_for_user
 from .credentials import SkynetCredentialsError
-from .pools import pool_labels, visible_pools
+from .pools import owner_label, pool_labels, visible_pools
 from .preview import preview_refusal, preview_summary
 
 FILTER_ROWS = 3
@@ -106,7 +106,12 @@ class SkynetImagingForm(BaseRoboticObservationForm):
     """
 
     name = forms.CharField(max_length=256)
-    grant = forms.TypedChoiceField(coerce=int, label="Time account")
+    grant = forms.TypedChoiceField(
+        coerce=int,
+        label="Time account",
+        help_text="The observation and its data belong to the account's owner: "
+        "you, or the organization",
+    )
     start = UTCDateTimeField(help_text="UTC")
     end = UTCDateTimeField(help_text="UTC")
     exposure_mode = forms.ChoiceField(
@@ -171,6 +176,8 @@ class SkynetImagingForm(BaseRoboticObservationForm):
 
         self.skynet = None
         self.pools: InstrumentPools | None = None
+        #: The Skynet user the TOM user's token acts for
+        self.skynet_user_id: int | None = None
         self.unavailable = ""
         self.needs_token = False
         self.skynet_request: SkynetImagingRequest | None = None
@@ -200,6 +207,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
         try:
             self.skynet = facility_for_user(user)
             self.pools = self.skynet.instrument_pools()
+            self.skynet_user_id = self.skynet.me().id
         except SkynetCredentialsError as exc:
             self.unavailable = f"{exc}. Set your Skynet API token first."
             self.needs_token = True
@@ -208,8 +216,8 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             self.unavailable = f"Skynet is unavailable: {error_message(exc)}"
             return
 
-        shown = visible_pools(self.pools)
-        labels = pool_labels(self.pools, shown)
+        shown = visible_pools(self.pools, self.skynet_user_id)
+        labels = pool_labels(self.pools, shown, self.skynet_user_id)
         self.choice_field("grant").choices = [
             (pool.grant_id, labels[pool.grant_id]) for pool in shown
         ]
@@ -221,7 +229,8 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             self.choice_field(f"filter_{row}").choices = [("", "---------"), *choices]
         if not shown:
             self.unavailable = (
-                "None of your Skynet time accounts can be used from this TOM."
+                "None of your Skynet time accounts can be used from this TOM: it "
+                "offers the accounts you own and organizations' accounts."
             )
 
     def layout(self):
@@ -446,11 +455,20 @@ class SkynetImagingForm(BaseRoboticObservationForm):
     def serialize_parameters(self) -> dict:
         """The cleaned data in a JSON-safe form, for ObservationRecord.parameters"""
         parameters = super().serialize_parameters()
-        return {
+        serialized = {
             key: value.isoformat() if isinstance(value, datetime) else value
             for key, value in parameters.items()
             if key != "request"
         }
+        if self.pools is not None and parameters.get("grant") is not None:
+            # Whose the observation is on Skynet, shown on the record page
+            owner = self.pools.owner(self.pools.pool(parameters["grant"]))
+            serialized["skynet_owner"] = (
+                f"{owner_label(owner)} ({owner.entity_type})"
+                if owner is not None
+                else owner_label(owner)
+            )
+        return serialized
 
 
 def build_request(cleaned: dict, target: Target) -> SkynetImagingRequest:

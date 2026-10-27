@@ -12,6 +12,7 @@ from tom_dataproducts.models import DataProduct
 from tom_observations.models import ObservationRecord
 from tom_targets.models import Target
 
+import tom_skynet
 from tom_skynet.facility import SkynetFacility, SkynetSubmitError
 from tom_skynet.models import SkynetProfile, SkynetRecordState
 
@@ -110,6 +111,7 @@ class TestSubmit:
         assert created.observation_id == "310"
         assert created.user == ada
         assert created.parameters["grant"] == 99
+        assert created.parameters["skynet_owner"] == "Ada Lovelace (user)"
         assert created.parameters["start"] == "2026-11-01T00:00:00+00:00"
 
     def test_validate_previews_the_telescopes_and_does_not_submit(
@@ -384,8 +386,6 @@ class TestCancel:
     def test_a_scheduled_record_offers_cancel_with_the_override(
         self, client, ada, target, skynet_api, settings, override, offered
     ):
-        import tom_skynet
-
         if override:
             settings.TEMPLATES = [
                 settings.TEMPLATES[0] | {"DIRS": [tom_skynet.TEMPLATE_OVERRIDES]}
@@ -698,3 +698,33 @@ class TestThumbnails:
         older.refresh_from_db()
         assert "Drew 1 thumbnails" in capsys.readouterr().out.splitlines()[-1]
         assert older.thumbnail.path == first  # the old file went first
+
+
+class TestLostAccess:
+    def test_a_404_marks_the_record_and_stops_polling_it(self, ada, target, skynet_api):
+        lost = record(ada, target)
+        # Not in skynet_api.progress: Skynet answers 404, as for one Ada can't view
+        facility = SkynetFacility()
+        assert facility.update_all_observation_statuses() == []
+        assert SkynetRecordState.objects.get(record=lost).access_lost
+        polls = len(skynet_api.requests)
+        facility.update_all_observation_statuses()
+        assert len(skynet_api.requests) == polls
+
+    def test_the_record_page_says_so(self, client, ada, target, skynet_api, settings):
+        lost = record(ada, target)
+        SkynetFacility().update_observation_status("317")
+        settings.TEMPLATES = [
+            settings.TEMPLATES[0] | {"DIRS": [tom_skynet.TEMPLATE_OVERRIDES]}
+        ]
+        assign_perm("tom_targets.view_target", ada, target)
+        client.force_login(ada)
+        page = client.get(reverse("tom_observations:detail", args=[lost.pk]))
+        assert "no longer lets this record" in page.content.decode()
+
+    def test_other_errors_still_fail_the_poll(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.rejected_tokens = {"ada-token"}
+        (failed,) = SkynetFacility().update_all_observation_statuses()
+        assert failed[0] == "317"
+        assert not SkynetRecordState.objects.filter(access_lost=True).exists()

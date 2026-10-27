@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (2026-10-26)
+
+- Time accounts by ownership: the form and profile card offer the accounts the
+  user owns and organizations' accounts, labelled with their owner, and never
+  another user's personal account. The record's parameters name the owner.
+- Removed `allowed_telescope_prefix`: which telescopes an account reaches is
+  Skynet's to decide.
+- A record whose observation its owner can no longer read (a 404) stops being
+  polled, and its page says so (migration `0003`).
+- Needs AEONlib's `SkynetFacility.me()` and `InstrumentPools.owner()`.
+
 ## 0.2.1 (2026-10-26)
 
 - Thumbnails for Skynet's frames, drawn when a product is saved: TOM Toolkit

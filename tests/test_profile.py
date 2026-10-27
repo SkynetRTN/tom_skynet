@@ -34,13 +34,17 @@ class TestProfileCard:
         SkynetProfile.objects.create(user=ada, api_token="ada-token")
         page = profile_page(client, ada)
         assert "API token set" in page
-        assert "Ada&#x27;s account" in page and "Transient team" in page
+        assert "for Skynet user Ada Lovelace" in page
+        assert "Ada&#x27;s account (yours)" in page
+        assert "Transient team (organization)" in page
 
-    def test_the_sim_guard_applies(self, client, ada, skynet_api, settings):
-        settings.FACILITIES["SKYNET"]["allowed_telescope_prefix"] = "sim-"
+    def test_another_users_personal_account_is_left_out(self, client, ada, skynet_api):
+        bob = {"id": 135, "entityType": "user", "slug": "bob", "name": "Bob"}
+        skynet_api.pools["entities"]["135"] = bob
+        skynet_api.pools["observingAccounts"]["70"]["ownerId"] = 135
         SkynetProfile.objects.create(user=ada, api_token="ada-token")
         page = profile_page(client, ada)
-        assert "Ada&#x27;s account" in page and "Transient team" not in page
+        assert "Ada&#x27;s account (yours)" in page and "Transient team" not in page
 
     def test_a_token_skynet_refuses(self, client, ada, skynet_api):
         skynet_api.rejected_tokens = {"old-token"}

@@ -10,6 +10,11 @@ from aeonlib.skynet import SkynetFacility as AeonlibSkynetFacility
 
 DATA = Path(__file__).parent / "data"
 
+#: GET /v1/me for the fixtures' user: Ada (133) owns account 69, and holds a
+#: member grant on the Transient team organization's account 70
+ADA_ID = 133
+ADA = {"id": ADA_ID, "entityType": "user", "username": "ada", "name": "Ada Lovelace"}
+
 
 def load(name: str):
     return json.loads((DATA / name).read_text())
@@ -54,6 +59,8 @@ class SkynetAPI:
         token = request.headers.get("Authorization", "").removeprefix("Bearer ")
         if token in self.rejected_tokens:
             return httpx.Response(401, json={"detail": "Invalid token"})
+        if path == "/v1/me":
+            return httpx.Response(200, json=ADA)
         if path == "/v1/me/observing-access/instrument-pools":
             return httpx.Response(200, json=self.pools)
         if path == "/v1/observation-specs:publish":

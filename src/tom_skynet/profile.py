@@ -15,17 +15,21 @@ def profile_card(user) -> dict:
         "updated_at": profile.updated_at if profile else None,
         "accounts": [],
         "problem": "",
+        "skynet_user": "",
     }
     if not context["has_token"]:
         return context
     try:
-        pools = facility_for_user(user).instrument_pools()
+        skynet = facility_for_user(user)
+        pools = skynet.instrument_pools()
+        me = skynet.me()
     except AuthenticationError:
         context["problem"] = "Skynet didn't accept this token."
         return context
     except (SkynetCredentialsError, ServiceNetworkError, SkynetError) as exc:
         context["problem"] = f"Skynet is unavailable: {error_message(exc)}"
         return context
-    shown = visible_pools(pools)
-    context["accounts"] = sorted(pool_labels(pools, shown).values())
+    shown = visible_pools(pools, me.id)
+    context["accounts"] = sorted(pool_labels(pools, shown, me.id).values())
+    context["skynet_user"] = me.name or me.username
     return context

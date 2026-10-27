@@ -29,6 +29,12 @@ class SkynetRecordState(models.Model):
     )
     products_final = models.BooleanField(default=False)
     """Skynet's productsFinal: the state is terminal and no products will be added"""
+    access_lost = models.BooleanField(default=False)
+    """
+    The owner's token can no longer read the observation (Skynet answers 404),
+    as when they leave the organization whose account funded it. The record
+    isn't polled again; the products already saved stay.
+    """
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

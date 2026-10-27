@@ -27,6 +27,9 @@ PRODUCT_PREFIX = "skynet:"
 
 DOWNLOAD_TIMEOUT_SEC = 120
 
+# What Skynet answers for an observation the caller can't view
+NOT_FOUND = 404
+
 # TOM Toolkit's data product type for FITS images, when the TOM defines it
 FITS_FILE = "fits_file"
 
@@ -149,10 +152,25 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
     def update_observation_status(self, observation_id):
         """Write the state, then save any final products not saved yet"""
-        progress = facility_for_observation(observation_id).progress(observation_id)
         records = ObservationRecord.objects.filter(
             facility=self.name, observation_id=str(observation_id)
         )
+        try:
+            progress = facility_for_observation(observation_id).progress(observation_id)
+        except SkynetError as exc:
+            if exc.status_code != NOT_FOUND:
+                raise
+            # Skynet hides an observation the caller can't view behind a 404
+            logger.warning(
+                "Skynet observation %s: its owner's token can no longer read it; "
+                "not polling it again",
+                observation_id,
+            )
+            for record in records:
+                SkynetRecordState.objects.update_or_create(
+                    record=record, defaults={"access_lost": True}
+                )
+            return
         for record in records:
             record.status = STATES[progress.state]
             record.scheduled_start = progress.scheduled_start
@@ -187,7 +205,7 @@ class SkynetFacility(BaseRoboticObservationFacility):
         records = records.exclude(
             Q(status__in=self.get_terminal_observing_states())
             & Q(skynet_state__products_final=True)
-        )
+        ).exclude(skynet_state__access_lost=True)
         failed_records = []
         for observation_id in records.values_list(
             "observation_id", flat=True

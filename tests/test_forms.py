@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 from aeonlib.exceptions import AuthenticationError
-from aeonlib.skynet import InstrumentPools, SpecValidation
+from aeonlib.skynet import Entity, InstrumentPools, SkynetUser, SpecValidation
 from crispy_forms.utils import render_crispy_form
 from tom_targets.models import Target
 
@@ -13,6 +13,8 @@ from tom_skynet.credentials import SkynetCredentialsError
 from tom_skynet.facility import SkynetFacility
 from tom_skynet.forms import SkynetImagingForm
 from tom_skynet.pools import pool_labels
+
+from .conftest import ADA, ADA_ID
 
 DATA = Path(__file__).parent / "data"
 
@@ -30,6 +32,9 @@ class FakeSkynet:
 
     def instrument_pools(self):
         return self.pools
+
+    def me(self):
+        return SkynetUser.model_validate(ADA)
 
     def validate(self, request):
         return self.validation
@@ -108,25 +113,46 @@ def form(facility, values=None, **initial) -> SkynetImagingForm:
     return SkynetImagingForm(data=values, initial=initial, facility=facility)
 
 
+def owned_by_bob(pools: InstrumentPools) -> None:
+    """Make account 70 another user's personal account, Ada holding a member grant"""
+    pools.entities[135] = Entity(id=135, entity_type="user", slug="bob", name="Bob")
+    pools.observing_accounts[70].owner_id = 135
+
+
 class TestChoices:
-    def test_every_pool_without_a_guard(self, skynet, facility):
+    def test_her_own_account_and_the_organizations_with_their_owners(
+        self, skynet, facility
+    ):
+        # Whatever telescopes they reach: Skynet decides that, through its grants
         assert form(facility).choice_field("grant").choices == [
-            (99, "Ada's account"),
-            (100, "Transient team"),
+            (99, "Ada's account (yours)"),
+            (100, "Transient team (organization)"),
         ]
 
-    def test_the_guard_hides_pools_reaching_other_telescopes(
-        self, skynet, facility, settings
+    def test_an_organization_named_otherwise_is_named(self, skynet, facility, pools):
+        pools.observing_accounts[70].name = "AEON+ pilot"
+        choices = cast(list, form(facility).choice_field("grant").choices)
+        assert (100, "AEON+ pilot (Transient team)") in choices
+
+    def test_another_users_personal_account_is_never_offered(
+        self, skynet, facility, pools
     ):
-        settings.FACILITIES = {"SKYNET": {"allowed_telescope_prefix": "sim-"}}
-        # Grant 100 also reaches PROMPT-CTIO-6, so only the sim-only pool is left.
-        assert form(facility).choice_field("grant").choices == [(99, "Ada's account")]
+        owned_by_bob(pools)
+        assert form(facility).choice_field("grant").choices == [
+            (99, "Ada's account (yours)")
+        ]
+
+    def test_a_crafted_grant_on_it_is_refused(self, skynet, facility, pools, target):
+        owned_by_bob(pools)
+        bound = form(facility, data(target, grant="100"))
+        assert not bound.is_valid()
+        assert "grant" in bound.errors
 
     def test_several_grants_on_one_account_name_their_type(self, pools):
         pools.pools[1].account_id = pools.pools[0].account_id
-        assert pool_labels(pools, pools.pools) == {
-            99: "Ada's account (owner)",
-            100: "Ada's account (member)",
+        assert pool_labels(pools, pools.pools, ADA_ID) == {
+            99: "Ada's account (yours, owner)",
+            100: "Ada's account (yours, member)",
         }
 
     def test_filters_are_the_union_of_the_shown_pools(self, skynet, facility, pools):
@@ -168,6 +194,16 @@ class TestValidRequest:
         json.dumps(parameters)
         assert parameters["start"] == "2026-11-01T00:00:00+00:00"
         assert parameters["grant"] == 99
+        assert parameters["skynet_owner"] == "Ada Lovelace (user)"
+
+    def test_an_organizations_account_records_the_organization(
+        self, skynet, facility, target
+    ):
+        bound = form(facility, data(target, grant="100"))
+        assert bound.is_valid(), bound.errors
+        assert bound.serialize_parameters()["skynet_owner"] == (
+            "Transient team (organization)"
+        )
 
     def test_unused_filter_rows_are_ignored(self, skynet, facility, target):
         values = data(target, filter_2="", target_snr_2="", count_2="")
@@ -265,8 +301,9 @@ class TestUnavailable:
         assert "&lt;b&gt;insufficient_scope&lt;/b&gt;" in html
         assert "<b>insufficient_scope</b>" not in html
 
-    def test_no_usable_account(self, skynet, facility, settings):
-        settings.FACILITIES = {"SKYNET": {"allowed_telescope_prefix": "nowhere-"}}
+    def test_no_usable_account(self, skynet, facility, pools):
+        owned_by_bob(pools)
+        pools.observing_accounts[69].owner_id = 135
         assert "None of your Skynet time accounts" in form(facility).unavailable
 
 

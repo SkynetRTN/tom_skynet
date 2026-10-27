@@ -1,8 +1,9 @@
 {% extends 'tom_common/base.html' %}
 {% comment %}
-TOM Toolkit 3.1's tom_observations/observationrecord_detail.html, with one
-change: a Skynet record offers Cancel until it is terminal, not only while
-PENDING. Opt in by adding tom_skynet.TEMPLATE_OVERRIDES to TEMPLATES DIRS.
+TOM Toolkit 3.1's tom_observations/observationrecord_detail.html, with two
+changes: a Skynet record offers Cancel until it is terminal, not only while
+PENDING; and it says when its owner can no longer read the observation. Opt in
+by adding tom_skynet.TEMPLATE_OVERRIDES to TEMPLATES DIRS.
 {% endcomment %}
 {% load django_bootstrap5 static observation_extras dataproduct_extras %}
 {% block title %} Observation record: {{ object.id }} {% endblock %}
@@ -29,6 +30,13 @@ PENDING. Opt in by adding tom_skynet.TEMPLATE_OVERRIDES to TEMPLATES DIRS.
           <a class="btn btn-danger" href="{% url 'tom_observations:cancel' pk=object.pk %}">Cancel Observation</a>
         {% endif %}
       </p>
+      {% if object.skynet_state.access_lost %}
+        <div class="alert alert-warning mt-2">
+          Skynet no longer lets this record's owner read the observation (for example,
+          they left the organization that owns its time account), so it isn't updated
+          any more. Products already saved stay here.
+        </div>
+      {% endif %}
     </div>
     <p></p>
     {% upload_dataproduct object %}

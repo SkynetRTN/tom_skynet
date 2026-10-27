@@ -5,14 +5,15 @@
       <p>
         <span class="badge bg-success">API token set</span>
         {% if updated_at %}<span class="text-muted">on {{ updated_at|date:"Y-m-d H:i" }}</span>{% endif %}
+        {% if skynet_user %}<span class="text-muted">for Skynet user {{ skynet_user }}</span>{% endif %}
       </p>
       {% if problem %}
         <div class="alert alert-warning">{{ problem }}</div>
       {% elif accounts %}
-        <p class="mb-1">Time accounts you can use from this TOM:</p>
+        <p class="mb-1">Time accounts you can use from this TOM (an observation belongs to its account's owner):</p>
         <ul>{% for account in accounts %}<li>{{ account }}</li>{% endfor %}</ul>
       {% else %}
-        <p>None of your Skynet time accounts can be used from this TOM.</p>
+        <p>None of your Skynet time accounts can be used from this TOM: it offers the accounts you own and organizations' accounts.</p>
       {% endif %}
       <a href="{% url 'tom_skynet:token' %}" class="btn btn-outline-primary btn-sm">Change Skynet API token</a>
     {% else %}
