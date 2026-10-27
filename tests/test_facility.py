@@ -1,6 +1,10 @@
+import io
 import json
 
+import numpy as np
 import pytest
+from astropy.io import fits
+from django.core.files.base import ContentFile
 from django.core.management import call_command
 from django.urls import reverse
 from guardian.shortcuts import assign_perm
@@ -635,3 +639,62 @@ def test_the_observation_link_needs_no_token(skynet_api):
         SkynetFacility().get_observation_url("317")
         == "http://web.test/observations/317"
     )
+
+
+def skynet_frame() -> bytes:
+    """A frame as Skynet stores it: tile-compressed, no EXTNAME on the image"""
+    rng = np.random.default_rng(317)
+    data = rng.normal(1000, 30, size=(300, 400)).astype(np.float32)
+    buffer = io.BytesIO()
+    fits.HDUList([fits.PrimaryHDU(), fits.CompImageHDU(data)]).writeto(buffer)
+    return buffer.getvalue()
+
+
+class TestThumbnails:
+    def test_tom_toolkit_draws_none_for_a_skynet_frame(self, ada, target, skynet_api):
+        saved = DataProduct.objects.create(product_id="skynet:x", target=target)
+        saved.data.save("frame.fits", ContentFile(skynet_frame()))
+        assert saved.create_thumbnail(width=200, height=200) is None
+
+    def test_a_saved_frame_has_a_thumbnail(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        skynet_api.download_content = skynet_frame()
+        SkynetFacility().update_observation_status("317")
+        saved = DataProduct.objects.get()
+        assert saved.thumbnail.name.endswith("reduced-0001_tb.jpg")
+        # TOM Toolkit's page shows it as is, without trying to redraw it
+        assert saved.get_preview() == saved.thumbnail.url
+        saved.thumbnail.open("rb")
+        assert saved.thumbnail.read(2) == b"\xff\xd8"  # a JPEG
+
+    def test_a_file_it_cant_draw_is_saved_without_one(self, ada, target, skynet_api):
+        record(ada, target)
+        skynet_api.progress["317"] = products()
+        SkynetFacility().update_observation_status("317")
+        saved = DataProduct.objects.get()
+        assert saved.data and not saved.thumbnail
+
+    def test_the_command_draws_the_missing_ones(self, ada, target, skynet_api, capsys):
+        older = DataProduct.objects.create(product_id="skynet:old", target=target)
+        older.data.save("old.fits", ContentFile(skynet_frame()))
+        other = DataProduct.objects.create(product_id="lco:1", target=target)
+        other.data.save("lco.fits", ContentFile(skynet_frame()))
+        call_command("skynet_thumbnails")
+        older.refresh_from_db()
+        other.refresh_from_db()
+        assert older.thumbnail.name.endswith("old_tb.jpg")
+        assert not other.thumbnail  # not Skynet's
+        call_command("skynet_thumbnails")
+        assert "Drew 0 thumbnails" in capsys.readouterr().out.splitlines()[-1]
+
+    def test_a_redraw_replaces_the_thumbnail(self, ada, target, skynet_api, capsys):
+        older = DataProduct.objects.create(product_id="skynet:old", target=target)
+        older.data.save("old.fits", ContentFile(skynet_frame()))
+        call_command("skynet_thumbnails")
+        older.refresh_from_db()
+        first = older.thumbnail.path
+        call_command("skynet_thumbnails", "--redraw")
+        older.refresh_from_db()
+        assert "Drew 1 thumbnails" in capsys.readouterr().out.splitlines()[-1]
+        assert older.thumbnail.path == first  # the old file went first

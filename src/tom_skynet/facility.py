@@ -17,6 +17,7 @@ from .client import error_message, facility_for_observation
 from .credentials import FACILITY_NAME, SkynetCredentialsError, web_root
 from .forms import SkynetImagingForm
 from .models import SkynetRecordState
+from .thumbnails import save_thumbnail
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +253,8 @@ class SkynetFacility(BaseRoboticObservationFacility):
             )
             data_product.data.save(product["filename"], ContentFile(response.content))
             logger.info("Saved Skynet data product %s", data_product.data)
+            # TOM Toolkit draws none for Skynet's frames (see thumbnails.py)
+            save_thumbnail(data_product, response.content)
             if getattr(settings, "AUTO_THUMBNAILS", False):
                 create_image_dataproduct(data_product)
                 data_product.get_preview()

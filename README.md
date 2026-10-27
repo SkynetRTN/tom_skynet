@@ -104,6 +104,11 @@ or in Django admin, under Skynet profiles.
   token. A record keeps being polled after the observation ends, until
   Skynet reports its products final, because frames are processed after they
   are taken.
+- **Thumbnails** are drawn when a product is saved. TOM Toolkit draws none for
+  Skynet's frames (it wants a `SCI` extension; Skynet's images are
+  tile-compressed extensions with no `EXTNAME`), so the package draws them.
+  For products saved before 0.2.1: `python manage.py skynet_thumbnails`
+  (`--redraw` to draw every one again).
 - **Cancel:** the observation page's Cancel, by the user who submitted it (or
   staff). Frames already taken are kept, so a cancel can end as
   `PARTIALLY_COMPLETED`. TOM Toolkit shows Cancel only while a record is
@@ -133,9 +138,6 @@ or in Django admin, under Skynet profiles.
 - Non-sidereal targets, and choosing a telescope or site.
 - A reopened Skynet observation: once a record is terminal, the TOM stops
   following it.
-- Thumbnails: TOM Toolkit only makes them for FITS files with a `SCI`
-  extension, and Skynet's images are tile-compressed extensions with no
-  `EXTNAME`.
 
 ## Development
 

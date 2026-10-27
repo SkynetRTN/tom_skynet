@@ -25,6 +25,8 @@ class SkynetAPI:
         self.requests: list[httpx.Request] = []
         self.downloads: list[str] = []
         self.download_status = 200
+        #: The bytes every presigned download answers with
+        self.download_content = b"SIMPLE  =                    T"
         #: File ids the presign endpoint leaves out of its answer
         self.unsigned: set[str] = set()
         #: The answer to a cancel; a 2xx marks the observation canceled
@@ -135,7 +137,7 @@ def skynet_api(monkeypatch, settings, tmp_path):
         api.downloads.append(url)
         response = httpx.Response(
             api.download_status,
-            content=b"SIMPLE  =                    T",
+            content=api.download_content,
             request=httpx.Request("GET", url),
         )
 
