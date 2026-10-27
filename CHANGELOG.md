@@ -10,7 +10,7 @@
 - A record whose observation its owner's token can no longer read (a 404, as
   when the token now belongs to another Skynet user) stops being polled, and its
   page says so, without asking Skynet for its products (migration `0003`).
-- Needs AEONlib's `SkynetFacility.me()` and `InstrumentPools.owner()`.
+- Needs AEONlib's `SkynetFacility.me()` and `InstrumentPools.owner()` (pins `e055052`).
 
 ## 0.2.1 (2026-10-26)
 
