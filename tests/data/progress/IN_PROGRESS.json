@@ -1,14 +1,13 @@
 {
-  "id": 23,
   "products": [],
   "productsFinal": false,
   "progressFraction": 0.0,
   "resultCounts": {
     "dispatched": 1
   },
-  "scheduledEnd": "2026-11-13T10:54:32Z",
-  "scheduledStart": "2026-11-13T10:34:32Z",
+  "scheduledEnd": "2026-11-13T18:17:26Z",
+  "scheduledStart": "2026-11-13T17:57:26Z",
   "state": "in_progress",
   "status": "active",
-  "uid": "1bb78b0e-bc6d-4602-83e5-68c4d7a754b6"
+  "uid": "23b7ac40-8a53-47f0-90ee-1046824a1adf"
 }

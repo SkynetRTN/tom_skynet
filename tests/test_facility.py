@@ -586,10 +586,10 @@ class TestProductMetadata:
         skynet_api.progress[OBS] = products()
         # The products' telescope (recorded elsewhere) among the owner's pools
         expected = load("progress_products.json")["products"][0]
-        telescope = skynet_api.pools["telescopesByUid"][
-            skynet_api.pools["instrumentsByUid"][ATACAMA]["telescopeUid"]
+        telescope = skynet_api.pools["telescopes"][
+            skynet_api.pools["instruments"][ATACAMA]["telescopeUid"]
         ] | {"uid": expected["telescopeUid"]}
-        skynet_api.pools["telescopesByUid"][expected["telescopeUid"]] = telescope
+        skynet_api.pools["telescopes"][expected["telescopeUid"]] = telescope
         SkynetFacility().update_observation_status(OBS)
         (saved,) = DataProduct.objects.all()
         assert saved.data_product_type == "fits_file"

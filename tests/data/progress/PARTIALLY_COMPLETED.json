@@ -1,5 +1,4 @@
 {
-  "id": 25,
   "products": [],
   "productsFinal": true,
   "progressFraction": 0.0,
@@ -7,9 +6,9 @@
     "canceled": 1,
     "fulfilled": 1
   },
-  "scheduledEnd": "2026-11-11T07:59:32Z",
-  "scheduledStart": "2026-11-11T07:39:32Z",
+  "scheduledEnd": "2026-11-11T15:22:26Z",
+  "scheduledStart": "2026-11-11T15:02:26Z",
   "state": "partially_completed",
   "status": "completed",
-  "uid": "31ae0753-f2de-44d8-8a54-680685a3b39d"
+  "uid": "6b184f27-ef77-42c3-87dc-16c7f3f1825b"
 }

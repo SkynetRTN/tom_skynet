@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1 (2026-11-13)
+
+- Reads Skynet's contract API: the pools response's sideload maps are keyed by
+  uid under their plain names (`observingAccounts`, `entities`, `telescopes`,
+  `instruments`) and carry no integer id. Needs AEONlib's contract pools maps
+  (pins `5f92252`). Fixtures re-copied from Skynet's contract recording.
+
 ## 0.4.0 (2026-11-13)
 
 - Skynet resources are addressed by uid, never by Skynet's integer ids (Skynet
