@@ -42,8 +42,11 @@ class SkynetFacility(BaseRoboticObservationFacility):
     """
     Skynet Robotic Telescope Network facility
 
-    Methods that take an observation id act as the TOM user who owns the record,
-    whoever set_user names: that user's token can read the observation.
+    An observation record's observation_id is the Skynet observation's uid
+    (Skynet addresses everything by uid; its integer ids are not read). The
+    methods TOM Toolkit calls with an observation_id get that uid, and act as
+    the TOM user who owns the record, whoever set_user names: that user's
+    token can read the observation.
     """
 
     name = FACILITY_NAME
@@ -66,16 +69,16 @@ class SkynetFacility(BaseRoboticObservationFacility):
 
     def submit_observation(self, observation_payload):
         """
-        Return the id of the observation the form submitted, or submit the
+        Return the uid of the observation the form submitted, or submit the
         payload's parameters as self.user when the form wasn't used
         """
-        observation_id = observation_payload.get("skynet_observation_id")
-        if observation_id is None:
+        observation_uid = observation_payload.get("skynet_observation_uid")
+        if observation_uid is None:
             form = self._form(observation_payload, submit=True)
             if not form.is_valid() or form.submitted is None:
                 raise SkynetSubmitError(" ".join(map(str, form.non_field_errors())))
-            observation_id = form.submitted.id
-        return [str(observation_id)]
+            observation_uid = form.submitted.uid
+        return [str(observation_uid)]
 
     def validate_observation(self, observation_payload):
         """
@@ -87,7 +90,8 @@ class SkynetFacility(BaseRoboticObservationFacility):
         return [str(error) for error in form.non_field_errors()]
 
     def get_observation_url(self, observation_id):
-        # AEONlib's observation_url, which needs a token to build the facility
+        # AEONlib's observation_url (the website's uid short link), which needs
+        # a token to build the facility
         return f"{web_root().rstrip('/')}/observations/{observation_id}"
 
     def get_terminal_observing_states(self):
@@ -329,7 +333,7 @@ def _fits_type() -> str:
 
 
 def _telescopes(observation_id) -> dict:
-    """The record owner's telescopes by id, or nothing when the pools can't be read"""
+    """The record owner's telescopes by uid, or nothing when the pools can't be read"""
     try:
         pools = facility_for_observation(observation_id).instrument_pools()
     except (
@@ -344,14 +348,14 @@ def _telescopes(observation_id) -> dict:
 
 def _metadata(product, telescopes: dict) -> dict:
     """The D9 metadata saved in DataProduct.extra_data, units in the names"""
-    telescope = telescopes.get(product.telescope_id)
+    telescope = telescopes.get(product.telescope_uid)
     metadata = {
         "skynet_file_id": product.file_id,
         "is_reduced": product.is_reduced,
-        "telescope_id": product.telescope_id,
+        "telescope_uid": product.telescope_uid,
         "telescope_name": telescope.name if telescope else None,
         "telescope_slug": telescope.slug if telescope else None,
-        "instrument_id": product.instrument_id,
+        "instrument_uid": product.instrument_uid,
         "filter_id": product.filter_id,
         "exposure_time_sec": product.exposure_time_sec,
         "taken_at_start_utc": product.taken_at_start_utc.isoformat()

@@ -14,7 +14,7 @@ from tom_skynet.preview import preview_refusal, preview_summary
 
 def telescope(name: str) -> Telescope:
     return Telescope(
-        id=1,
+        uid=f"te1e5c0e-0000-4000-8000-{abs(hash(name)) % 10**12:012d}",
         name=name,
         slug=name.lower(),
         latitude_deg=0,
@@ -26,7 +26,7 @@ def telescope(name: str) -> Telescope:
 def request() -> SkynetImagingRequest:
     return SkynetImagingRequest(
         name="x",
-        grant_id=1,
+        grant_uid="00000000-0000-4000-8000-000000000001",
         target=SiderealTarget(name="t", type="ICRS", ra=1, dec=2),
         window=Window(
             start=datetime(2026, 11, 1, tzinfo=UTC),
@@ -38,7 +38,7 @@ def request() -> SkynetImagingRequest:
 
 def preview(instrument_id: int, name: str, *, compatible=True, observable=True):
     return InstrumentPreview(
-        instrument_id=instrument_id,
+        instrument_uid=f"1a57a000-0000-4000-8000-{instrument_id:012d}",
         telescope=telescope(name),
         compatible=compatible,
         reasons=[] if compatible else ["No filter V"],

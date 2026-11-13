@@ -2,12 +2,12 @@
   "expiresIn": 60,
   "items": [
     {
-      "fileId": "576148ae-7201-4017-b20c-513ab9f8341e",
-      "url": "https://fake-minio.invalid/entity-data/sweep/aa0bfe4a/raw-0001.fits?method=get_object&expires=60"
+      "fileId": "93f7a2d3-d3ac-47cb-b4e6-e5d0d9427e67",
+      "url": "https://fake-minio.invalid/entity-data/sweep/46ef3541/raw-0001.fits?method=get_object&expires=60"
     },
     {
-      "fileId": "6b2c5420-2fd9-4eea-8e8c-4ae21e14561c",
-      "url": "https://fake-minio.invalid/entity-data/sweep/1d461e27/reduced-0001.fits?method=get_object&expires=60"
+      "fileId": "b7831b9d-b93b-4178-8029-993d81c874a5",
+      "url": "https://fake-minio.invalid/entity-data/sweep/d0a425c1/reduced-0001.fits?method=get_object&expires=60"
     }
   ]
 }

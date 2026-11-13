@@ -6,6 +6,8 @@ from tom_skynet.facility import SkynetFacility
 from tom_skynet.forms import SkynetImagingForm
 from tom_skynet.models import SkynetProfile
 
+from .conftest import BOB_UID, TEAM_ACCOUNT
+
 pytestmark = pytest.mark.django_db
 
 TOKEN_URL = "/skynet/token/"
@@ -39,9 +41,9 @@ class TestProfileCard:
         assert "Transient team (organization)" in page
 
     def test_another_users_personal_account_is_left_out(self, client, ada, skynet_api):
-        bob = {"id": 135, "entityType": "user", "slug": "bob", "name": "Bob"}
-        skynet_api.pools["entities"]["135"] = bob
-        skynet_api.pools["observingAccounts"]["70"]["ownerId"] = 135
+        bob = {"uid": BOB_UID, "entityType": "user", "slug": "bob", "name": "Bob"}
+        skynet_api.pools["entitiesByUid"][BOB_UID] = bob
+        skynet_api.pools["observingAccountsByUid"][TEAM_ACCOUNT]["ownerUid"] = BOB_UID
         SkynetProfile.objects.create(user=ada, api_token="ada-token")
         page = profile_page(client, ada)
         assert "Ada&#x27;s account (yours)" in page and "Transient team" not in page

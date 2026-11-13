@@ -29,7 +29,7 @@ def profile_card(user) -> dict:
     except (SkynetCredentialsError, ServiceNetworkError, SkynetError) as exc:
         context["problem"] = f"Skynet is unavailable: {error_message(exc)}"
         return context
-    shown = visible_pools(pools, me.id)
-    context["accounts"] = sorted(pool_labels(pools, shown, me.id).values())
+    shown = visible_pools(pools, me.uid)
+    context["accounts"] = sorted(pool_labels(pools, shown, me.uid).values())
     context["skynet_user"] = me.name or me.username
     return context

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 (2026-11-13)
+
+- Skynet resources are addressed by uid, never by Skynet's integer ids (Skynet
+  is retiring them): a record's `observation_id` is the observation uid, the
+  record's `grant` parameter is the grant uid, the form's time-account choices
+  are grant uids, and saved products' metadata carries `telescope_uid` /
+  `instrument_uid` in place of `telescope_id` / `instrument_id`. The payload key
+  for an observation submitted by the form is `skynet_observation_uid`.
+- Migration `0004` rewrites the records earlier versions stored with integer
+  ids, reading each observation and grant from Skynet's API with the record
+  owner's token. It needs Skynet reachable and must run before Skynet's
+  contract deploy drops the integer paths; a record it can't resolve fails the
+  migration rather than being skipped.
+- Needs AEONlib's uid Skynet facility (pins `de9f815`).
+
 ## 0.3.0 (2026-10-26)
 
 - Time accounts by ownership: the form and profile card offer the accounts the

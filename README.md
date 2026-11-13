@@ -18,7 +18,7 @@ Work in progress: sidereal imaging only. See [What isn't supported](#what-isnt-s
 yet; install it from git, at a release tag:
 
 ```bash
-pip install "tom-skynet @ git+https://github.com/SkynetRTN/tom_skynet@v0.2.0"
+pip install "tom-skynet @ git+https://github.com/SkynetRTN/tom_skynet@v0.4.0"
 ```
 
 Add it to your TOM's `settings.py` and migrate:
@@ -44,6 +44,16 @@ python manage.py migrate
 The app registers the Skynet facility, its URLs (`/skynet/`) and its card on
 the user profile page itself; it doesn't go in `TOM_FACILITY_CLASSES` or
 `urls.py`.
+
+Skynet addresses every resource by uid, and so does `tom_skynet`: a record's
+`observation_id` is the Skynet observation's uid and its `grant` parameter the
+grant's uid. Upgrading from a version before 0.4 runs migration `0004`, which
+rewrites the integer ids those versions stored by reading each observation and
+grant from Skynet with the record owner's token; Skynet must be reachable, and
+the migration must run before Skynet's contract deploy drops its integer paths.
+A record it can't resolve (no token for its owner, or Skynet refuses the read)
+fails the migration with the record named; fix or delete that record and run
+`migrate` again.
 
 ## Settings
 
