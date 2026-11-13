@@ -37,7 +37,7 @@ NOW = datetime(2026, 10, 25, tzinfo=UTC)
 
 
 def load(name: str):
-    return json.loads((DATA / name).read_text())
+    return json.loads((DATA / name).read_text(encoding="utf-8"))
 
 
 class SkynetAPI:
