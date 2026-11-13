@@ -13,7 +13,7 @@
   owner's token. It needs Skynet reachable and must run before Skynet's
   contract deploy drops the integer paths; a record it can't resolve fails the
   migration rather than being skipped.
-- Needs AEONlib's uid Skynet facility (pins `de9f815`).
+- Needs AEONlib's uid Skynet facility (pins `dff1492`).
 
 ## 0.3.0 (2026-10-26)
 
