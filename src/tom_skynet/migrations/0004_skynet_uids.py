@@ -2,7 +2,7 @@
 #
 # Rewrites the integer Skynet ids stored by earlier versions through Skynet's
 # API, which accepts both until its contract deploy; see uid_migration.py and
-# the runbook in SkynetRTN/skynet docs/internal/runbooks/TOM_UID_MIGRATION.md.
+# the runbook in SkynetRTN/skynet docs/internal/reference/TOM_UID_MIGRATION_RUNBOOK.md.
 # The reverse is a no-op: Skynet keeps resolving the uids.
 
 from django.db import migrations
