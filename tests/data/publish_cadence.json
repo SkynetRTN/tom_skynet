@@ -1,7 +1,7 @@
 {
-  "ownerId": 134,
-  "observingGrantIds": [
-    100
+  "ownerUid": "55305e4c-005e-4cab-928f-e1e2ed1d70f2",
+  "observingGrantUids": [
+    "b394f88c-73b5-4bf2-ae29-fa2c1d222c98"
   ],
   "name": "AT 2026abc nightly",
   "spec": {

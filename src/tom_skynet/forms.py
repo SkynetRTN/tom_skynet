@@ -69,7 +69,7 @@ def _row_fields(row: int) -> tuple[str, str, str, str]:
 # AEONlib request fields, as SkynetFacility.validate names them, to form fields
 REQUEST_FIELDS = {
     "name": "name",
-    "grant_id": "grant",
+    "grant_uid": "grant",
     "window.start": "start",
     "window.end": "end",
     "source.magnitude": "magnitude",
@@ -106,8 +106,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
     """
 
     name = forms.CharField(max_length=256)
-    grant = forms.TypedChoiceField(
-        coerce=int,
+    grant = forms.ChoiceField(
         label="Time account",
         help_text="The observation and its data belong to the account's owner: "
         "you, or the organization",
@@ -176,8 +175,8 @@ class SkynetImagingForm(BaseRoboticObservationForm):
 
         self.skynet = None
         self.pools: InstrumentPools | None = None
-        #: The Skynet user the TOM user's token acts for
-        self.skynet_user_id: int | None = None
+        #: The Skynet user the TOM user's token acts for (their entity uid)
+        self.skynet_user_uid: str | None = None
         self.unavailable = ""
         self.needs_token = False
         self.skynet_request: SkynetImagingRequest | None = None
@@ -207,7 +206,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
         try:
             self.skynet = facility_for_user(user)
             self.pools = self.skynet.instrument_pools()
-            self.skynet_user_id = self.skynet.me().id
+            self.skynet_user_uid = self.skynet.me().uid
         except SkynetCredentialsError as exc:
             self.unavailable = f"{exc}. Set your Skynet API token first."
             self.needs_token = True
@@ -216,12 +215,12 @@ class SkynetImagingForm(BaseRoboticObservationForm):
             self.unavailable = f"Skynet is unavailable: {error_message(exc)}"
             return
 
-        shown = visible_pools(self.pools, self.skynet_user_id)
-        labels = pool_labels(self.pools, shown, self.skynet_user_id)
+        shown = visible_pools(self.pools, self.skynet_user_uid)
+        labels = pool_labels(self.pools, shown, self.skynet_user_uid)
         self.choice_field("grant").choices = [
-            (pool.grant_id, labels[pool.grant_id]) for pool in shown
+            (pool.grant_uid, labels[pool.grant_uid]) for pool in shown
         ]
-        filters = sorted({f for pool in shown for f in pool.filter_instrument_ids})
+        filters = sorted({f for pool in shown for f in pool.filter_instrument_uids})
         choices = [(f, f) for f in filters]
         self.choice_field("magnitude_filter").choices = choices
         self.choice_field("filter_1").choices = choices
@@ -329,7 +328,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
         cleaned = self.cleaned_data
         limits = pool.limits
         for row, filter_id in exposures:
-            if filter_id not in pool.filter_instrument_ids:
+            if filter_id not in pool.filter_instrument_uids:
                 self.add_error(
                     f"filter_{row}",
                     f"{filter_id} isn't offered by this time account's telescopes.",
@@ -449,7 +448,7 @@ class SkynetImagingForm(BaseRoboticObservationForm):
     def observation_payload(self) -> dict:
         payload = super().observation_payload()
         if self.submitted is not None:
-            payload["skynet_observation_id"] = self.submitted.id
+            payload["skynet_observation_uid"] = self.submitted.uid
         return payload
 
     def serialize_parameters(self) -> dict:
@@ -504,7 +503,7 @@ def build_request(cleaned: dict, target: Target) -> SkynetImagingRequest:
     period_hours = cleaned.get("cadence_period_hours")
     return SkynetImagingRequest(
         name=cleaned["name"],
-        grant_id=cleaned["grant"],
+        grant_uid=cleaned["grant"],
         target=SiderealTarget(
             name=target.name[:50], type="ICRS", ra=target.ra, dec=target.dec
         ),

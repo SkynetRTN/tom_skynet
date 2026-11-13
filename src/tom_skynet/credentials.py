@@ -50,7 +50,10 @@ def settings_for_user(user) -> Settings:
 
 
 def settings_for_observation(observation_id) -> Settings:
-    """Build AEONlib settings from the token of the user who owns the observation record"""
+    """
+    Build AEONlib settings from the token of the user who owns the observation
+    record. observation_id is the record's observation_id: the Skynet uid.
+    """
     record = (
         ObservationRecord.objects.filter(
             facility=FACILITY_NAME, observation_id=str(observation_id)

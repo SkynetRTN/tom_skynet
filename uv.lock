@@ -10,7 +10,7 @@ resolution-markers = [
 [[package]]
 name = "aeonlib"
 version = "0.2.0"
-source = { git = "https://github.com/SkynetRTN/AEONlib?rev=e0550523ed35016fd01e10d6923db73a01a94633#e0550523ed35016fd01e10d6923db73a01a94633" }
+source = { git = "https://github.com/SkynetRTN/AEONlib?rev=dff14924c00614ac2f9a4d66b1a9cb3be964d59c#dff14924c00614ac2f9a4d66b1a9cb3be964d59c" }
 dependencies = [
     { name = "astropy" },
     { name = "httpx" },
@@ -1614,7 +1614,7 @@ wheels = [
 
 [[package]]
 name = "tom-skynet"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "aeonlib" },
@@ -1630,7 +1630,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aeonlib", git = "https://github.com/SkynetRTN/AEONlib?rev=e0550523ed35016fd01e10d6923db73a01a94633" },
+    { name = "aeonlib", git = "https://github.com/SkynetRTN/AEONlib?rev=dff14924c00614ac2f9a4d66b1a9cb3be964d59c" },
     { name = "tomtoolkit", specifier = ">=3.1,<4" },
 ]
 

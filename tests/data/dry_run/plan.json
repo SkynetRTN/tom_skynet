@@ -4,7 +4,7 @@
     "dither": [],
     "positionAngleDeg": 0.0,
     "selectedFiltersByRequest": {
-      "2": [
+      "17": [
         {
           "bandpassNm": null,
           "centralWavelengthNm": null,
@@ -16,7 +16,7 @@
           "throughputFraction": null
         }
       ],
-      "3": [
+      "18": [
         {
           "bandpassNm": null,
           "centralWavelengthNm": null,
@@ -29,9 +29,10 @@
         }
       ]
     },
+    "seriesPlans": [],
     "tiles": [],
-    "totalExposureTimeSec": 13.671846599574522,
-    "totalExposures": 6,
+    "totalExposureTimeSec": 129600.0,
+    "totalExposures": 36,
     "xFov": 0.6078745282941177,
     "yFov": 0.40524968552941176
   }

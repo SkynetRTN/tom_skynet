@@ -14,7 +14,17 @@ from tom_skynet.facility import SkynetFacility
 from tom_skynet.forms import SkynetImagingForm
 from tom_skynet.pools import pool_labels
 
-from .conftest import ADA, ADA_ID
+from .conftest import (
+    ADA,
+    ADA_ACCOUNT,
+    ADA_GRANT,
+    ADA_UID,
+    BOB_UID,
+    NO_SUCH_GRANT,
+    TEAM_ACCOUNT,
+    TEAM_GRANT,
+    TEAM_UID,
+)
 
 DATA = Path(__file__).parent / "data"
 
@@ -77,7 +87,7 @@ def data(target, **overrides) -> dict:
         "target_id": target.pk,
         "observation_type": "IMAGING",
         "name": "AT 2026abc follow-up",
-        "grant": "99",
+        "grant": ADA_GRANT,
         "start": "2026-11-01T00:00",
         "end": "2026-11-08T00:00",
         "filter_1": "r'",
@@ -114,9 +124,11 @@ def form(facility, values=None, **initial) -> SkynetImagingForm:
 
 
 def owned_by_bob(pools: InstrumentPools) -> None:
-    """Make account 70 another user's personal account, Ada holding a member grant"""
-    pools.entities[135] = Entity(id=135, entity_type="user", slug="bob", name="Bob")
-    pools.observing_accounts[70].owner_id = 135
+    """Make the team's account another user's personal account, Ada holding a member grant"""
+    pools.entities[BOB_UID] = Entity(
+        uid=BOB_UID, entity_type="user", slug="bob", name="Bob"
+    )
+    pools.observing_accounts[TEAM_ACCOUNT].owner_uid = BOB_UID
 
 
 class TestChoices:
@@ -125,34 +137,34 @@ class TestChoices:
     ):
         # Whatever telescopes they reach: Skynet decides that, through its grants
         assert form(facility).choice_field("grant").choices == [
-            (99, "Ada's account (yours)"),
-            (100, "Transient team (organization)"),
+            (ADA_GRANT, "Ada's account (yours)"),
+            (TEAM_GRANT, "Transient team (organization)"),
         ]
 
     def test_an_organization_named_otherwise_is_named(self, skynet, facility, pools):
-        pools.observing_accounts[70].name = "AEON+ pilot"
+        pools.observing_accounts[TEAM_ACCOUNT].name = "AEON+ pilot"
         choices = cast(list, form(facility).choice_field("grant").choices)
-        assert (100, "AEON+ pilot (Transient team)") in choices
+        assert (TEAM_GRANT, "AEON+ pilot (Transient team)") in choices
 
     def test_another_users_personal_account_is_never_offered(
         self, skynet, facility, pools
     ):
         owned_by_bob(pools)
         assert form(facility).choice_field("grant").choices == [
-            (99, "Ada's account (yours)")
+            (ADA_GRANT, "Ada's account (yours)")
         ]
 
     def test_a_crafted_grant_on_it_is_refused(self, skynet, facility, pools, target):
         owned_by_bob(pools)
-        bound = form(facility, data(target, grant="100"))
+        bound = form(facility, data(target, grant=TEAM_GRANT))
         assert not bound.is_valid()
         assert "grant" in bound.errors
 
     def test_several_grants_on_one_account_name_their_type(self, pools):
-        pools.pools[1].account_id = pools.pools[0].account_id
-        assert pool_labels(pools, pools.pools, ADA_ID) == {
-            99: "Ada's account (yours, owner)",
-            100: "Ada's account (yours, member)",
+        pools.pools[1].account_uid = pools.pools[0].account_uid
+        assert pool_labels(pools, pools.pools, ADA_UID) == {
+            ADA_GRANT: "Ada's account (yours, owner)",
+            TEAM_GRANT: "Ada's account (yours, member)",
         }
 
     def test_filters_are_the_union_of_the_shown_pools(self, skynet, facility, pools):
@@ -184,7 +196,7 @@ class TestValidRequest:
         bound = form(facility, data(target))
         assert bound.is_valid(), bound.errors
         assert bound.skynet_request is not None
-        body = bound.skynet_request.to_publish_body(owner_id=133)
+        body = bound.skynet_request.to_publish_body(owner_uid=ADA_UID)
         assert body == load("publish_snr.json")
 
     def test_parameters_are_json_safe(self, skynet, facility, target):
@@ -193,13 +205,13 @@ class TestValidRequest:
         parameters = bound.serialize_parameters()
         json.dumps(parameters)
         assert parameters["start"] == "2026-11-01T00:00:00+00:00"
-        assert parameters["grant"] == 99
+        assert parameters["grant"] == ADA_GRANT
         assert parameters["skynet_owner"] == "Ada Lovelace (user)"
 
     def test_an_organizations_account_records_the_organization(
         self, skynet, facility, target
     ):
-        bound = form(facility, data(target, grant="100"))
+        bound = form(facility, data(target, grant=TEAM_GRANT))
         assert bound.is_valid(), bound.errors
         assert bound.serialize_parameters()["skynet_owner"] == (
             "Transient team (organization)"
@@ -238,8 +250,8 @@ class TestInvalidRequest:
         assert "event_time must be before window.start" in str(bound.non_field_errors())
 
     def test_a_filter_the_account_lacks(self, skynet, facility, target, pools):
-        del pools.pools[1].filter_instrument_ids["r'"]
-        bound = form(facility, data(target, grant="100"))
+        del pools.pools[1].filter_instrument_uids["r'"]
+        bound = form(facility, data(target, grant=TEAM_GRANT))
         assert not bound.is_valid()
         assert "isn't offered" in messages(bound, "filter_1")
 
@@ -265,7 +277,7 @@ class TestInvalidRequest:
         assert set(bound.errors) >= {"target_snr_3", "count_3"}
 
     def test_an_unknown_time_account(self, skynet, facility, target):
-        bound = form(facility, data(target, grant="12345"))
+        bound = form(facility, data(target, grant=NO_SUCH_GRANT))
         assert not bound.is_valid()
         assert "grant" in bound.errors
 
@@ -303,7 +315,7 @@ class TestUnavailable:
 
     def test_no_usable_account(self, skynet, facility, pools):
         owned_by_bob(pools)
-        pools.observing_accounts[69].owner_id = 135
+        pools.observing_accounts[ADA_ACCOUNT].owner_uid = BOB_UID
         assert "None of your Skynet time accounts" in form(facility).unavailable
 
 
@@ -344,7 +356,7 @@ class TestExposureTime:
         bound = form(facility, exposure_data(target))
         assert bound.is_valid(), bound.errors
         assert bound.skynet_request is not None
-        body = bound.skynet_request.to_publish_body(owner_id=133)
+        body = bound.skynet_request.to_publish_body(owner_uid=ADA_UID)
         assert body == load("publish_exposure.json")
 
     def test_a_row_needs_its_exposure_time(self, skynet, facility, target):
@@ -371,7 +383,7 @@ class TestCadenceAndConstraints:
         values = data(
             target,
             name="AT 2026abc nightly",
-            grant="100",
+            grant=TEAM_GRANT,
             target_snr_1="5",
             count_1="2",
             filter_2="",
@@ -385,7 +397,7 @@ class TestCadenceAndConstraints:
         bound = form(facility, values)
         assert bound.is_valid(), bound.errors
         assert bound.skynet_request is not None
-        body = bound.skynet_request.to_publish_body(owner_id=134)
+        body = bound.skynet_request.to_publish_body(owner_uid=TEAM_UID)
         assert body == load("publish_cadence.json")
 
     def test_epochs_need_a_period(self, skynet, facility, target):

@@ -6,7 +6,7 @@ from aeonlib.skynet import InstrumentPreview, SkynetImagingRequest
 def _name(preview: InstrumentPreview) -> str:
     if preview.telescope is not None:
         return preview.telescope.name
-    return f"instrument {preview.instrument_id}"
+    return f"instrument {preview.instrument_uid[:8]}"
 
 
 def _names(previews: list[InstrumentPreview]) -> str:

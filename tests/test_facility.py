@@ -16,13 +16,21 @@ import tom_skynet
 from tom_skynet.facility import SkynetFacility, SkynetSubmitError
 from tom_skynet.models import SkynetProfile, SkynetRecordState
 
-from .conftest import load
+from .conftest import ADA_GRANT, ATACAMA, PUBLISHED, SIMS, load
 
 pytestmark = pytest.mark.django_db
 
 PUBLISH = ("POST", "/v1/observation-specs:publish")
 PRESIGN = ("POST", "/v1/files/data/presign")
 FILE_ID = load("progress_products.json")["products"][0]["fileId"]
+#: The recorded observation with a product (progress_products.json)
+OBS = load("progress_products.json")["uid"]
+PROGRESS = ("GET", f"/v1/observations/{OBS}/progress")
+#: Other records' observations
+OTHER = "0b5e7a71-0000-4000-8000-000000000311"
+NO_TOKEN = "0b5e7a71-0000-4000-8000-000000000300"
+EXPIRED = "0b5e7a71-0000-4000-8000-000000000315"
+CANCELED = "0b5e7a71-0000-4000-8000-000000000314"
 
 
 @pytest.fixture
@@ -46,7 +54,7 @@ def form_data(target, **overrides) -> dict:
         "target_id": target.pk,
         "observation_type": "IMAGING",
         "name": "AT 2026abc follow-up",
-        "grant": "99",
+        "grant": ADA_GRANT,
         "start": "2026-11-01T00:00",
         "end": "2026-11-08T00:00",
         "filter_1": "r'",
@@ -69,7 +77,7 @@ def form_data(target, **overrides) -> dict:
     return values
 
 
-def record(owner, target, observation_id="317", status=""):
+def record(owner, target, observation_id=OBS, status=""):
     return ObservationRecord.objects.create(
         target=target,
         user=owner,
@@ -85,7 +93,7 @@ def progress(state="IN_PROGRESS", **changes) -> dict:
 
 
 def products(**changes) -> dict:
-    """progress_products.json: observation 317, one final reduced product"""
+    """progress_products.json: observation OBS, one final reduced product"""
     return load("progress_products.json") | changes
 
 
@@ -108,16 +116,16 @@ class TestSubmit:
         assert json.loads(publish.content) == load("publish_snr.json")
         assert publish.headers["Authorization"] == "Bearer ada-token"
         (created,) = ObservationRecord.objects.all()
-        assert created.observation_id == "310"
+        assert created.observation_id == PUBLISHED
         assert created.user == ada
-        assert created.parameters["grant"] == 99
+        assert created.parameters["grant"] == ADA_GRANT
         assert created.parameters["skynet_owner"] == "Ada Lovelace (user)"
         assert created.parameters["start"] == "2026-11-01T00:00:00+00:00"
 
     def test_validate_previews_the_telescopes_and_does_not_submit(
         self, client, ada, target, skynet_api, create_url
     ):
-        skynet_api.unobservable = {105}
+        skynet_api.unobservable = {ATACAMA}
         client.force_login(ada)
         values = form_data(target, validate="Validate")
         del values["submit"]
@@ -151,7 +159,7 @@ class TestSubmit:
     def test_submit_refuses_what_no_telescope_can_carry_out(
         self, client, ada, target, skynet_api, create_url
     ):
-        skynet_api.incompatible = {105, 106, 107}
+        skynet_api.incompatible = set(SIMS)
         client.force_login(ada)
         response = client.post(create_url, form_data(target))
         assert response.status_code == 200
@@ -164,7 +172,7 @@ class TestSubmit:
     def test_submit_refuses_what_no_telescope_can_observe(
         self, client, ada, target, skynet_api, create_url
     ):
-        skynet_api.unobservable = {105, 106, 107}
+        skynet_api.unobservable = set(SIMS)
         client.force_login(ada)
         response = client.post(create_url, form_data(target))
         assert "can observe it in the window" in response.content.decode()
@@ -173,7 +181,7 @@ class TestSubmit:
     def test_a_window_checked_only_in_part_is_submitted(
         self, client, ada, target, skynet_api, create_url
     ):
-        skynet_api.unobservable = {105, 106, 107}
+        skynet_api.unobservable = set(SIMS)
         client.force_login(ada)
         response = client.post(create_url, form_data(target, end="2026-12-01T00:00"))
         assert response.status_code == 302
@@ -202,7 +210,7 @@ class TestSubmit:
         del payload["params"]["submit"]
         assert facility.validate_observation(payload) == []
         assert not skynet_api.sent(*PUBLISH)
-        assert facility.submit_observation(payload) == ["310"]
+        assert facility.submit_observation(payload) == [PUBLISHED]
         assert len(skynet_api.sent(*PUBLISH)) == 1
 
     def test_an_invalid_payload_without_the_form(self, ada, target, skynet_api):
@@ -250,8 +258,8 @@ class TestWithoutAUser:
 
 class TestStatus:
     def test_updatestatus_needs_no_username(self, ada, target, skynet_api):
-        record(ada, target, "311")
-        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        record(ada, target, OTHER)
+        skynet_api.progress[OTHER] = progress("SCHEDULED", uid=OTHER)
         call_command("updatestatus")
         updated = ObservationRecord.objects.get()
         assert updated.status == "SCHEDULED"
@@ -262,11 +270,11 @@ class TestStatus:
     def test_the_record_owners_token_whoever_is_set(
         self, ada, target, skynet_api, django_user_model
     ):
-        record(ada, target, "311")
-        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        record(ada, target, OTHER)
+        skynet_api.progress[OTHER] = progress("SCHEDULED", uid=OTHER)
         facility = SkynetFacility()
         facility.set_user(django_user_model.objects.create_user(username="bob"))
-        assert facility.get_observation_status("311")["state"] == "SCHEDULED"
+        assert facility.get_observation_status(OTHER)["state"] == "SCHEDULED"
         (request,) = skynet_api.requests
         assert request.headers["Authorization"] == "Bearer ada-token"
 
@@ -274,17 +282,17 @@ class TestStatus:
         self, ada, target, skynet_api, django_user_model
     ):
         bob = django_user_model.objects.create_user(username="bob")
-        record(bob, target, "300")
-        record(ada, target, "311")
-        skynet_api.progress["311"] = progress("SCHEDULED", id=311)
+        record(bob, target, NO_TOKEN)
+        record(ada, target, OTHER)
+        skynet_api.progress[OTHER] = progress("SCHEDULED", uid=OTHER)
         failed = SkynetFacility().update_all_observation_statuses()
-        assert failed == [("300", "No Skynet API token for bob")]
-        assert ObservationRecord.objects.get(observation_id="311").status == "SCHEDULED"
+        assert failed == [(NO_TOKEN, "No Skynet API token for bob")]
+        assert ObservationRecord.objects.get(observation_id=OTHER).status == "SCHEDULED"
 
     def test_a_failed_state(self, ada, target, skynet_api):
-        expired = record(ada, target, "315")
-        skynet_api.progress["315"] = progress("WINDOW_EXPIRED", id=315)
-        SkynetFacility().update_observation_status("315")
+        expired = record(ada, target, EXPIRED)
+        skynet_api.progress[EXPIRED] = progress("WINDOW_EXPIRED", uid=EXPIRED)
+        SkynetFacility().update_observation_status(EXPIRED)
         expired.refresh_from_db()
         assert expired.status == "WINDOW_EXPIRED"
         assert expired.terminal and expired.failed
@@ -296,11 +304,11 @@ class TestStatus:
         facility = SkynetFacility()
 
         def polls() -> int:
-            before = len(skynet_api.sent("GET", "/v1/observations/317/progress"))
+            before = len(skynet_api.sent(*PROGRESS))
             assert facility.update_all_observation_statuses() == []
-            return len(skynet_api.sent("GET", "/v1/observations/317/progress")) - before
+            return len(skynet_api.sent(*PROGRESS)) - before
 
-        skynet_api.progress["317"] = products(state="completed")
+        skynet_api.progress[OBS] = products(state="completed")
         assert polls() == 1  # one read for the state and the products to save
         polled.refresh_from_db()
         assert polled.status == "COMPLETED"
@@ -309,14 +317,14 @@ class TestStatus:
 
         assert polls() == 1  # terminal, but still polled
 
-        skynet_api.progress["317"] = products(state="completed", productsFinal=True)
+        skynet_api.progress[OBS] = products(state="completed", productsFinal=True)
         assert polls() == 1
         assert SkynetRecordState.objects.get(record=polled).products_final
         assert polls() == 0
 
     def test_canceled_with_nothing_stops_after_one_poll(self, ada, target, skynet_api):
-        record(ada, target, "314")
-        skynet_api.progress["314"] = progress("CANCELED")
+        record(ada, target, CANCELED)
+        skynet_api.progress[CANCELED] = progress("CANCELED", uid=CANCELED)
         facility = SkynetFacility()
         assert facility.update_all_observation_statuses() == []
         assert facility.update_all_observation_statuses() == []
@@ -324,7 +332,7 @@ class TestStatus:
 
 
 class TestCancel:
-    PATCH = ("PATCH", "/v1/observations/317")
+    PATCH = ("PATCH", f"/v1/observations/{OBS}")
 
     def cancel(self, client, user, observation):
         client.force_login(user)
@@ -337,7 +345,7 @@ class TestCancel:
         self, client, ada, target, skynet_api
     ):
         pending = record(ada, target, status="PENDING")
-        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.progress[OBS] = progress("PENDING", uid=OBS)
         response = self.cancel(client, ada, pending)
         assert b"Successfully cancelled" in response.content
         (patch,) = skynet_api.sent(*self.PATCH)
@@ -350,7 +358,7 @@ class TestCancel:
         self, client, ada, target, skynet_api, django_user_model
     ):
         pending = record(ada, target, status="PENDING")
-        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.progress[OBS] = progress("PENDING", uid=OBS)
         bob = django_user_model.objects.create_user(username="bob")
         response = self.cancel(client, bob, pending)
         assert b"Only the TOM user who submitted it" in response.content
@@ -358,7 +366,7 @@ class TestCancel:
 
     def test_staff_can_cancel(self, client, ada, target, skynet_api, django_user_model):
         pending = record(ada, target, status="PENDING")
-        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.progress[OBS] = progress("PENDING", uid=OBS)
         admin = django_user_model.objects.create_superuser(username="root")
         self.cancel(client, admin, pending)
         (patch,) = skynet_api.sent(*self.PATCH)
@@ -366,15 +374,15 @@ class TestCancel:
 
     def test_a_terminal_observation_is_left_alone(self, ada, target, skynet_api):
         record(ada, target, status="COMPLETED")
-        skynet_api.progress["317"] = products(state="completed")
+        skynet_api.progress[OBS] = products(state="completed")
         facility = SkynetFacility()
         facility.set_user(ada)
-        assert facility.cancel_observation("317") is True
+        assert facility.cancel_observation(OBS) is True
         assert not skynet_api.sent(*self.PATCH)
 
     def test_a_refusal_reaches_the_page(self, client, ada, target, skynet_api):
         pending = record(ada, target, status="PENDING")
-        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.progress[OBS] = progress("PENDING", uid=OBS)
         skynet_api.cancel_status = 409
         response = self.cancel(client, ada, pending)
         assert (
@@ -392,7 +400,7 @@ class TestCancel:
             ]
         scheduled = record(ada, target, status="SCHEDULED")
         assign_perm("tom_targets.view_target", ada, target)
-        skynet_api.progress["317"] = progress("SCHEDULED", id=317)
+        skynet_api.progress[OBS] = progress("SCHEDULED", uid=OBS)
         client.force_login(ada)
         page = client.get(
             reverse("tom_observations:detail", kwargs={"pk": scheduled.pk})
@@ -406,7 +414,7 @@ class TestCancel:
 
         pending = record(ada, target, status="PENDING")
         assign_perm("tom_targets.view_target", ada, target)
-        skynet_api.progress["317"] = progress("PENDING", id=317)
+        skynet_api.progress[OBS] = progress("PENDING", uid=OBS)
         api = APIClient()
         api.force_authenticate(ada)
         response = api.patch(f"/api/observations/{pending.pk}/cancel/")
@@ -418,8 +426,8 @@ class TestCancel:
 class TestDataProducts:
     def test_final_products_are_saved_while_polling(self, ada, target, skynet_api):
         polled = record(ada, target)
-        skynet_api.progress["317"] = products()
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products()
+        SkynetFacility().update_observation_status(OBS)
         (saved,) = DataProduct.objects.all()
         file_id = load("progress_products.json")["products"][0]["fileId"]
         assert saved.product_id == f"skynet:{file_id}"
@@ -430,10 +438,10 @@ class TestDataProducts:
 
     def test_saved_products_are_not_fetched_again(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         facility = SkynetFacility()
-        facility.update_observation_status("317")
-        facility.update_observation_status("317")
+        facility.update_observation_status(OBS)
+        facility.update_observation_status(OBS)
         assert len(skynet_api.sent(*PRESIGN)) == 1
         assert len(skynet_api.downloads) == 1
 
@@ -441,11 +449,11 @@ class TestDataProducts:
         self, ada, target, skynet_api
     ):
         polled = record(ada, target)
-        skynet_api.progress["317"] = products(productsFinal=True, state="completed")
+        skynet_api.progress[OBS] = products(productsFinal=True, state="completed")
         skynet_api.download_status = 403  # an expired presigned URL
         facility = SkynetFacility()
         assert facility.update_all_observation_statuses() == [
-            ("317", f"403 for https://minio.invalid/{FILE_ID}")
+            (OBS, f"403 for https://minio.invalid/{FILE_ID}")
         ]
         assert not DataProduct.objects.exists()
         assert not SkynetRecordState.objects.filter(
@@ -462,8 +470,12 @@ class TestDataProducts:
         self, ada, target, skynet_api
     ):
         polled = record(ada, target)
-        second = product("second-file", assetId=227, filename="reduced-0002.fits")
-        skynet_api.progress["317"] = products(
+        second = product(
+            "second-file",
+            assetUid="a55e7000-0000-4000-8000-000000000227",
+            filename="reduced-0002.fits",
+        )
+        skynet_api.progress[OBS] = products(
             state="completed", productsFinal=True, products=[product(FILE_ID), second]
         )
         skynet_api.unsigned = {"second-file"}  # e.g. a signing error
@@ -486,9 +498,9 @@ class TestDataProducts:
         self, ada, target, skynet_api
     ):
         polled = record(ada, target)
-        skynet_api.progress["317"] = products(state="completed", productsFinal=True)
+        skynet_api.progress[OBS] = products(state="completed", productsFinal=True)
         skynet_api.unsigned = {FILE_ID}
-        SkynetFacility().update_observation_status("317")
+        SkynetFacility().update_observation_status(OBS)
         assert not DataProduct.objects.exists()
         assert not SkynetRecordState.objects.get(record=polled).products_final
 
@@ -499,27 +511,31 @@ class TestDataProducts:
         DataProduct.objects.create(
             product_id=f"skynet:{FILE_ID}", target=target, observation_record=polled
         )
-        skynet_api.progress["317"] = products()
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products()
+        SkynetFacility().update_observation_status(OBS)
         (saved,) = DataProduct.objects.all()
         assert saved.data.name.endswith("reduced-0001.fits")
 
     def test_a_frame_still_processing_is_not_saved(self, ada, target, skynet_api):
         record(ada, target)
         raw = product("raw-file", isFinal=False, isReduced=False)
-        skynet_api.progress["317"] = products(products=[raw])
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products(products=[raw])
+        SkynetFacility().update_observation_status(OBS)
         assert not DataProduct.objects.exists()
         assert not skynet_api.sent(*PRESIGN)
 
     def test_a_reprocessed_frame_is_a_second_product(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         facility = SkynetFacility()
-        facility.update_observation_status("317")
-        rerun = product("reprocessed-file", assetId=227, filename="reduced-0002.fits")
-        skynet_api.progress["317"] = products(products=[rerun])
-        facility.update_observation_status("317")
+        facility.update_observation_status(OBS)
+        rerun = product(
+            "reprocessed-file",
+            assetUid="a55e7000-0000-4000-8000-000000000227",
+            filename="reduced-0002.fits",
+        )
+        skynet_api.progress[OBS] = products(products=[rerun])
+        facility.update_observation_status(OBS)
         assert sorted(DataProduct.objects.values_list("product_id", flat=True)) == [
             f"skynet:{load('progress_products.json')['products'][0]['fileId']}",
             "skynet:reprocessed-file",
@@ -527,23 +543,23 @@ class TestDataProducts:
 
     def test_the_products_offered_by_id(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products(
+        skynet_api.progress[OBS] = products(
             products=[
                 product("a"),
                 product("b", takenAtStartUtc="2026-10-23T13:40:00Z"),
             ]
         )
-        offered = SkynetFacility().data_products("317")
+        offered = SkynetFacility().data_products(OBS)
         assert [p["id"] for p in offered] == ["skynet:a", "skynet:b"]
         assert offered[1]["created"].isoformat() == "2026-10-23T13:40:00+00:00"
         assert offered[0]["url"] == "https://minio.invalid/a"
-        assert SkynetFacility().data_products("317", "skynet:b") == [offered[1]]
+        assert SkynetFacility().data_products(OBS, "skynet:b") == [offered[1]]
 
     def test_the_record_page_lists_the_unsaved_products(
         self, client, ada, target, skynet_api
     ):
         page = record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         assign_perm("tom_targets.view_target", ada, target)
         client.force_login(ada)
         response = client.get(reverse("tom_observations:detail", args=[page.pk]))
@@ -567,29 +583,31 @@ class TestProductMetadata:
         self, ada, target, skynet_api
     ):
         record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         # The products' telescope (recorded elsewhere) among the owner's pools
         expected = load("progress_products.json")["products"][0]
-        telescope = skynet_api.pools["telescopes"]["105"] | {
-            "id": expected["telescopeId"]
-        }
-        skynet_api.pools["telescopes"][str(expected["telescopeId"])] = telescope
-        SkynetFacility().update_observation_status("317")
+        telescope = skynet_api.pools["telescopesByUid"][
+            skynet_api.pools["instrumentsByUid"][ATACAMA]["telescopeUid"]
+        ] | {"uid": expected["telescopeUid"]}
+        skynet_api.pools["telescopesByUid"][expected["telescopeUid"]] = telescope
+        SkynetFacility().update_observation_status(OBS)
         (saved,) = DataProduct.objects.all()
         assert saved.data_product_type == "fits_file"
         metadata = json.loads(saved.extra_data)
         assert metadata["skynet_file_id"] == FILE_ID
         assert metadata["filter_id"] == expected["filterId"]
-        assert metadata["telescope_id"] == expected["telescopeId"]
+        assert metadata["telescope_uid"] == expected["telescopeUid"]
+        assert metadata["instrument_uid"] == expected["instrumentUid"]
+        assert "telescope_id" not in metadata and "instrument_id" not in metadata
         assert metadata["is_reduced"] is True
         assert metadata["telescope_slug"] == "sim-optical-atacama"
 
     def test_a_telescope_the_pools_dont_list_is_left_out(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products()
+        SkynetFacility().update_observation_status(OBS)
         metadata = json.loads(DataProduct.objects.get().extra_data)
-        assert "telescope_slug" not in metadata and metadata["telescope_id"]
+        assert "telescope_slug" not in metadata and metadata["telescope_uid"]
 
     def test_no_type_when_the_tom_lacks_fits_file(
         self, ada, target, skynet_api, monkeypatch
@@ -599,21 +617,21 @@ class TestProductMetadata:
             (("photometry", "Photometry"),),
         )
         record(ada, target)
-        skynet_api.progress["317"] = products()
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products()
+        SkynetFacility().update_observation_status(OBS)
         assert DataProduct.objects.get().data_product_type == ""
 
     def test_an_unsigned_product_has_no_link(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         skynet_api.unsigned = {FILE_ID}
-        (offered,) = SkynetFacility().data_products("317")
+        (offered,) = SkynetFacility().data_products(OBS)
         assert offered["url"] is None and offered["data"] == ""
 
     def test_unsaved_products_link_their_url(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
-        (offered,) = SkynetFacility().data_products("317")
+        skynet_api.progress[OBS] = products()
+        (offered,) = SkynetFacility().data_products(OBS)
         assert offered["data"] == offered["url"] == f"https://minio.invalid/{FILE_ID}"
 
 
@@ -636,8 +654,8 @@ class TestSites:
 
 def test_the_observation_link_needs_no_token(skynet_api):
     assert (
-        SkynetFacility().get_observation_url("317")
-        == "http://web.test/observations/317"
+        SkynetFacility().get_observation_url(OBS)
+        == f"http://web.test/observations/{OBS}"
     )
 
 
@@ -658,9 +676,9 @@ class TestThumbnails:
 
     def test_a_saved_frame_has_a_thumbnail(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
+        skynet_api.progress[OBS] = products()
         skynet_api.download_content = skynet_frame()
-        SkynetFacility().update_observation_status("317")
+        SkynetFacility().update_observation_status(OBS)
         saved = DataProduct.objects.get()
         assert saved.thumbnail.name.endswith("reduced-0001_tb.jpg")
         # TOM Toolkit's page shows it as is, without trying to redraw it
@@ -670,8 +688,8 @@ class TestThumbnails:
 
     def test_a_file_it_cant_draw_is_saved_without_one(self, ada, target, skynet_api):
         record(ada, target)
-        skynet_api.progress["317"] = products()
-        SkynetFacility().update_observation_status("317")
+        skynet_api.progress[OBS] = products()
+        SkynetFacility().update_observation_status(OBS)
         saved = DataProduct.objects.get()
         assert saved.data and not saved.thumbnail
 
@@ -713,7 +731,7 @@ class TestLostAccess:
 
     def test_the_record_page_says_so(self, client, ada, target, skynet_api, settings):
         lost = record(ada, target)
-        SkynetFacility().update_observation_status("317")
+        SkynetFacility().update_observation_status(OBS)
         settings.TEMPLATES = [
             settings.TEMPLATES[0] | {"DIRS": [tom_skynet.TEMPLATE_OVERRIDES]}
         ]
@@ -728,5 +746,5 @@ class TestLostAccess:
         record(ada, target)
         skynet_api.rejected_tokens = {"ada-token"}
         (failed,) = SkynetFacility().update_all_observation_statuses()
-        assert failed[0] == "317"
+        assert failed[0] == OBS
         assert not SkynetRecordState.objects.filter(access_lost=True).exists()

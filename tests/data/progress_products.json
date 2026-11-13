@@ -1,14 +1,16 @@
 {
-  "id": 317,
+  "id": 29,
   "products": [
     {
       "airmass": 1.21,
-      "assetId": 226,
+      "assetId": 11,
+      "assetUid": "8437f1e5-9013-4715-b107-d7cd8bb3a15d",
       "exposureTimeSec": 60.0,
-      "fileId": "6b2c5420-2fd9-4eea-8e8c-4ae21e14561c",
+      "fileId": "b7831b9d-b93b-4178-8029-993d81c874a5",
       "filename": "reduced-0001.fits",
       "filterId": "lum",
-      "instrumentId": 295,
+      "instrumentId": 77,
+      "instrumentUid": "acd53420-386c-46e1-b3f2-0804e7edc1dd",
       "isFinal": true,
       "isReduced": true,
       "pixelScaleArcsecPerPx": null,
@@ -16,10 +18,13 @@
         "reduced",
         "wcs_solved"
       ],
-      "rootAssetId": 225,
-      "takenAtStartUtc": "2026-10-23T13:32:15Z",
-      "taskId": 155,
-      "telescopeId": 462
+      "rootAssetId": 10,
+      "rootAssetUid": "3a1b63ed-bcbd-418b-970c-a1a4c7c18fa1",
+      "takenAtStartUtc": "2026-11-13T08:39:32Z",
+      "taskId": 15,
+      "taskUid": "d0ce027e-b43e-4ed8-87a0-aef7af26a5d5",
+      "telescopeId": 73,
+      "telescopeUid": "02bf7439-b658-4c1d-9843-bf98eca40085"
     }
   ],
   "productsFinal": false,
@@ -27,9 +32,9 @@
   "resultCounts": {
     "fulfilled": 1
   },
-  "scheduledEnd": "2026-10-23T13:52:15Z",
-  "scheduledStart": "2026-10-23T13:32:15Z",
+  "scheduledEnd": "2026-11-13T08:59:32Z",
+  "scheduledStart": "2026-11-13T08:39:32Z",
   "state": "in_progress",
   "status": "active",
-  "uid": "5ee30b61-77e6-45cf-9b08-9205adaedb61"
+  "uid": "2c1aa637-0913-4a82-8701-b81a30e58dff"
 }

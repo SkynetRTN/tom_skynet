@@ -4,7 +4,7 @@
     "dither": [],
     "positionAngleDeg": 0.0,
     "selectedFiltersByRequest": {
-      "5": [
+      "20": [
         {
           "bandpassNm": null,
           "centralWavelengthNm": null,
@@ -17,6 +17,7 @@
         }
       ]
     },
+    "seriesPlans": [],
     "tiles": [],
     "totalExposureTimeSec": 600.0,
     "totalExposures": 1,

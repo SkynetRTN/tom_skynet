@@ -2,7 +2,8 @@
   "results": [
     {
       "compatible": true,
-      "instrumentId": 10,
+      "instrumentId": 70,
+      "instrumentUid": "d78818b1-703c-4dd1-a824-cdb9c26ab65e",
       "reasons": []
     }
   ]
