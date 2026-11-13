@@ -1,95 +1,81 @@
 {
   "windows": [
     {
-      "endsOn": "2026-11-13T11:47:31.999756Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
-      "observable": false,
-      "reason": "Constraints violated: Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg",
-      "requestId": null,
-      "requestType": "optical_imaging",
-      "startsOn": "2026-11-13T10:39:31.999995Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
-    },
-    {
-      "endsOn": "2026-11-13T12:45:31.999548Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
-      "observable": false,
-      "reason": "Constraint violated: elevation > 30.0 deg",
-      "requestId": null,
-      "requestType": "optical_imaging",
-      "startsOn": "2026-11-13T11:47:31.999752Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
-    },
-    {
-      "endsOn": "2026-11-13T15:18:31.999001Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
-      "observable": false,
-      "reason": "Constraints violated: elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
-      "requestId": null,
-      "requestType": "optical_imaging",
-      "startsOn": "2026-11-13T12:45:31.999545Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
-    },
-    {
-      "endsOn": "2026-11-13T17:54:31.998443Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
-      "observable": false,
-      "reason": "Constraints violated: Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
-      "requestId": null,
-      "requestType": "optical_imaging",
-      "startsOn": "2026-11-13T15:18:31.998998Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
-    },
-    {
-      "endsOn": "2026-11-14T00:48:31.996963Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
+      "endsOn": "2026-11-14T00:48:25.998564Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
       "observable": false,
       "reason": "Constraints violated: Target is below the horizon; Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
-      "requestId": null,
       "requestType": "optical_imaging",
-      "startsOn": "2026-11-13T17:54:31.998440Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
+      "requestUid": null,
+      "startsOn": "2026-11-13T18:02:26.000013Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
     },
     {
-      "endsOn": "2026-11-14T09:07:31.995178Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
+      "endsOn": "2026-11-14T09:07:25.996780Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
       "observable": false,
       "reason": "Constraints violated: Target is below the horizon; Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg",
-      "requestId": null,
       "requestType": "optical_imaging",
-      "startsOn": "2026-11-14T00:48:31.996959Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
+      "requestUid": null,
+      "startsOn": "2026-11-14T00:48:25.998561Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
     },
     {
-      "endsOn": "2026-11-14T10:40:31.994846Z",
-      "instrumentId": 71,
-      "instrumentUid": "5c7f06cc-8841-4540-913f-3e39ddfe2952",
-      "obsId": 12,
+      "endsOn": "2026-11-14T11:43:25.996222Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
       "observable": false,
       "reason": "Constraints violated: Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg",
-      "requestId": null,
       "requestType": "optical_imaging",
-      "startsOn": "2026-11-14T09:07:31.995175Z",
-      "telescopeId": 67,
-      "telescopeUid": "d2cd6993-f934-4516-8968-19dc25f5e730"
+      "requestUid": null,
+      "startsOn": "2026-11-14T09:07:25.996776Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
+    },
+    {
+      "endsOn": "2026-11-14T12:46:25.995997Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
+      "observable": false,
+      "reason": "Constraint violated: elevation > 30.0 deg",
+      "requestType": "optical_imaging",
+      "requestUid": null,
+      "startsOn": "2026-11-14T11:43:25.996218Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
+    },
+    {
+      "endsOn": "2026-11-14T15:14:25.995467Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
+      "observable": false,
+      "reason": "Constraints violated: elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
+      "requestType": "optical_imaging",
+      "requestUid": null,
+      "startsOn": "2026-11-14T12:46:25.995993Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
+    },
+    {
+      "endsOn": "2026-11-14T17:51:25.994906Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
+      "observable": false,
+      "reason": "Constraints violated: Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
+      "requestType": "optical_imaging",
+      "requestUid": null,
+      "startsOn": "2026-11-14T15:14:25.995464Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
+    },
+    {
+      "endsOn": "2026-11-14T18:03:25.994863Z",
+      "instrumentUid": "533f0a65-2094-4fc6-90e4-dc0c41ccb0af",
+      "obsUid": null,
+      "observable": false,
+      "reason": "Constraints violated: Target is below the horizon; Target altitude is below mount minimum (20.0 deg); elevation > 30.0 deg; Sun altitude is above optical safety threshold (-10 deg)",
+      "requestType": "optical_imaging",
+      "requestUid": null,
+      "startsOn": "2026-11-14T17:51:25.994902Z",
+      "telescopeUid": "4b4db5be-7816-4f12-ab45-75309796794f"
     }
   ]
 }

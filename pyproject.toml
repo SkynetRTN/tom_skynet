@@ -1,6 +1,6 @@
 [project]
 name = "tom-skynet"
-version = "0.4.0"
+version = "0.4.1"
 description = "Skynet Robotic Telescope Network facility for the TOM Toolkit"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -11,7 +11,7 @@ dependencies = [
     "tomtoolkit>=3.1,<4",
     # AEONlib's Skynet facility isn't released yet: pinned to the
     # SkynetRTN/AEONlib fork's `skynet` branch until it is.
-    "aeonlib @ git+https://github.com/SkynetRTN/AEONlib@dff14924c00614ac2f9a4d66b1a9cb3be964d59c",
+    "aeonlib @ git+https://github.com/SkynetRTN/AEONlib@5f92252f1b8d01bbfc5f2c7965c647e8167521e7",
 ]
 
 [project.urls]

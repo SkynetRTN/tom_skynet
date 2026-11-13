@@ -3,32 +3,6 @@
   "opticalImagingConfigurationPlan": {
     "dither": [],
     "positionAngleDeg": 0.0,
-    "selectedFiltersByRequest": {
-      "17": [
-        {
-          "bandpassNm": null,
-          "centralWavelengthNm": null,
-          "filterSpecifierType": "filter",
-          "flatExposureScaler": null,
-          "flatExposureSunElevationCoeffPerDeg": null,
-          "id": "lum",
-          "isModifier": false,
-          "throughputFraction": null
-        }
-      ],
-      "18": [
-        {
-          "bandpassNm": null,
-          "centralWavelengthNm": null,
-          "filterSpecifierType": "filter",
-          "flatExposureScaler": null,
-          "flatExposureSunElevationCoeffPerDeg": null,
-          "id": "lum",
-          "isModifier": false,
-          "throughputFraction": null
-        }
-      ]
-    },
     "seriesPlans": [],
     "tiles": [],
     "totalExposureTimeSec": 129600.0,

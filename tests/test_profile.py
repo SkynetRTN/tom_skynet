@@ -42,8 +42,8 @@ class TestProfileCard:
 
     def test_another_users_personal_account_is_left_out(self, client, ada, skynet_api):
         bob = {"uid": BOB_UID, "entityType": "user", "slug": "bob", "name": "Bob"}
-        skynet_api.pools["entitiesByUid"][BOB_UID] = bob
-        skynet_api.pools["observingAccountsByUid"][TEAM_ACCOUNT]["ownerUid"] = BOB_UID
+        skynet_api.pools["entities"][BOB_UID] = bob
+        skynet_api.pools["observingAccounts"][TEAM_ACCOUNT]["ownerUid"] = BOB_UID
         SkynetProfile.objects.create(user=ada, api_token="ada-token")
         page = profile_page(client, ada)
         assert "Ada&#x27;s account (yours)" in page and "Transient team" not in page

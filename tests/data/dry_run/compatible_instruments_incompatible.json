@@ -2,8 +2,7 @@
   "results": [
     {
       "compatible": false,
-      "instrumentId": 74,
-      "instrumentUid": "a900c320-c53e-41b2-bf44-c3e4f5e49041",
+      "instrumentUid": "c373fffe-b003-40af-b751-ce915ec750cc",
       "reasons": [
         "No optical_imaging request matches the instrument's capabilities."
       ]
